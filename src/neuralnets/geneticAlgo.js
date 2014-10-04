@@ -7,21 +7,25 @@ window.GeneticAlgo = function() {
 		return ann.calcMSE(data)
 	}
 }
-GeneticAlgo.prototype.clearPop = function() {
-	POPULATION = [];
-}
 GeneticAlgo.prototype.displayPop = function() {
 	var box = el('populationBox'), html = [];
 	for (var i = 0; i < POPULATION.length; i++) {
 		var p = POPULATION[i], col = '';
 		if (!p) continue;
 		html.push('<td style="border: 1px solid black; cursor: pointer;background-color:', col, '" ',
-			'onclick=highlight(getByIndex(', i, '))>',
-			Math.round(100 * p.fitness) / 100);
+			'onclick=genAlgo.displayGenome(', i, ')>',
+			Math.round(10000 * p.fitness) / 10000);
 	}
 	box.innerHTML = html.join('');
-	if (!POPULATION.length) {console.log("ERROR: YOU NEED A POPULATION FIRST"); return;}
-	DISPLAY.setANN(POPULATION[0].genome);
+	if (!POPULATION.length) {alert("ERROR: YOU NEED A POPULATION FIRST"); return;}
+	this.displayGenome();
+	ann1().calcAccuracy();
+}
+GeneticAlgo.prototype.displayGenome = function(i) {
+	DISPLAY.setANN(POPULATION[i || 0].genome);
+}
+GeneticAlgo.prototype.createRandomGenome = function() {
+	return createANN();
 }
 function addToPop(genome, fitnessFn, data) {
 	POPULATION.push({genome:genome, fitness:fitnessFn(genome, data)});
@@ -63,11 +67,8 @@ GeneticAlgo.prototype.trainEvolution = function(data) {
 		var replication = ga.copyGenotype(parent.genome, ga.mutation.wgt, ga.mutation.node, ga.mutation.layer);
 		return ga.fromGenotype(replication.offspring);
 	};
-	var newRandoFn = function() {
-		return createANN();
-	}
 	
-	evolve(data, this.killR, this.fitnessFunction, newChildFn, newRandoFn);
+	evolve(data, this.killR, this.fitnessFunction, newChildFn, this.createRandomGenome);
 	
 	DEFAULT_TRANSFER_SET.reconnectTransfers();
 }
@@ -81,8 +82,9 @@ function dnaLength(numInputs, numOutputs) {
 	return MAX_NODES_PER_LAYER * (numInputs + numOutputs + MAX_NODES_PER_LAYER * (MAX_MIDDLE_LAYERS - 1));
 }
 
-function rMut(m) {return 2 * Math.random() * m - m;}
-function dMut(m) {var r = Math.random(); return r < m ? (r < m/2 ? -1 : 1) : 0;}
+function pMut(m) {return Math.random() < m;} // boolean mutation
+function rMut(m) {return 2 * Math.random() * m - m;} // continuous-value mutation
+function dMut(m) {var r = Math.random(); return r < m ? (r < m/2 ? -1 : 1) : 0;} // discrete-value [-1,1] mutation
 function pushFor(v, x) {
 	for (var i = 0; i < v.length; i++) v[i].push(x);
 }
@@ -169,9 +171,10 @@ GeneticAlgo.prototype.fromGenotype = function(dna) {
 		}
 		annLeftLayer = ann.hiddenLayers[i]; 
 	}
+	if (doBiases.length) ann.bias = createInputNode(ann, -1, -1, SIGMOID, true);
 	for (var i = 0; i < doBiases.length; i++) {
 		var bias = doBiases[i];
-		bias.node.giveBias(ann.inputs, bias.wgt);
+		bias.node.giveBias(ann.bias, bias.wgt);
 	}
 	DISPLAY.rescaleWeights();
 	return ann;
@@ -187,9 +190,3 @@ GeneticAlgo.prototype.mutateDNA = function(dna, mutateW, mutateN, mutateL) {
 	}
 }
 
-function highlight(member) {
-	return DISPLAY.setANN(member.genome);
-}
-function getByIndex(i) {
-	return POPULATION[i];
-}

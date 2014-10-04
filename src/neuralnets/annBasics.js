@@ -129,14 +129,14 @@ window.FFNeuralNetwork = function() {}
 function createFFNeuralNetwork(numInputs, numHiddenNodesArray, numOutputs) {
 	var ann = new FFNeuralNetwork();
 	ann.inputs = [];
-	var biasLayer = USE_BIAS ? ann.inputs : null;
+	if (USE_BIAS) ann.bias = createInputNode(ann, -1, -1, SIGMOID, true);
 	for (var i = 0; i < numInputs; i++) ann.inputs.push(createInputNode(ann, 0, i, SIGMOID));
 	ann.hiddenLayers = [];
 	var prevNodes = ann.inputs;
 	for (var i = 0; i < numHiddenNodesArray.length; i++) {
 		var hiddenNodes = [];
 		for (var j = 0; j < numHiddenNodesArray[i]; j++) hiddenNodes.push(
-				new HiddenNode(ann, i+1, j, SIGMOID, biasLayer));
+				new HiddenNode(ann, i+1, j, SIGMOID, ann.bias));
 		ann.hiddenLayers.push(hiddenNodes);
 		for (var k = 0; k < hiddenNodes.length; k++) {
 			for (var kk = 0; kk < prevNodes.length; kk++) {
@@ -148,7 +148,7 @@ function createFFNeuralNetwork(numInputs, numHiddenNodesArray, numOutputs) {
 	}
 	ann.outputs = [];
 	for (var i = 0; i < numOutputs; i++) {
-		ann.outputs.push(new HiddenNode(ann, ann.hiddenLayers.length + 1, i, SIGMOID, biasLayer));
+		ann.outputs.push(new HiddenNode(ann, ann.hiddenLayers.length + 1, i, SIGMOID, ann.bias));
 		for (var j = 0; j < prevNodes.length; j++) {
 			getOrCreateConnection(prevNodes[j], ann.outputs[i]);
 		}
@@ -193,11 +193,7 @@ FFNeuralNetwork.prototype.draw = function(ctx, x, y, w, h) {
 	var rhi = h / (2 * nonBiasN), b = 0;
 	for (var i = 0; i < this.inputs.length; i++) {
 		var inny = this.inputs[i];
-		if (inny.isBias) {
-			var outy = inny.outputConnections[0].outputNode, ox = outy.x, oy = outy.y;
-			toDraw.push(inny.predraw(ox - rhi, oy - rhi/2, rhi / 2, rhi / 2));
-			b++;
-		} else toDraw.push(inny.predraw(cw, y + rhi * (1 + 2 * (i - b)), rhi / 2, rhi / 2));
+		toDraw.push(inny.predraw(cw, y + rhi * (1 + 2 * (i - b)), rhi / 2, rhi / 2));
 	}
 	//connections TODO consolidate using concat
 	var connectionsToDraw = [];
@@ -225,8 +221,12 @@ FFNeuralNetwork.prototype.draw = function(ctx, x, y, w, h) {
 }
 FFNeuralNetwork.prototype.feedForward = function(ins) {
 	var n = Math.min(ins.length, this.inputs.length), nextNodes = [], nowNodes = [];
+	var seenNodes = []; // to prevent infinite loop from recurrency
+	
 	for (var i = 0; i < n; i++) {
 		var inny = this.inputs[i], outConns = inny.outputConnections;
+		if (contains(inny, seenNodes)) continue;
+		else seenNodes.push(inny);
 		inny.activate(parseInt(ins[i]));
 		for (j = 0; j < outConns.length; j++) {
 			var outy = outConns[j].outputNode;
@@ -239,6 +239,8 @@ FFNeuralNetwork.prototype.feedForward = function(ins) {
 		nextNodes = [];
 		for (var i = 0; i < nowNodes.length; i++) {
 			var inny = nowNodes[i], outConns = inny.outputConnections;
+			if (contains(inny, seenNodes)) continue;
+			else seenNodes.push(inny);
 			inny.activate();
 			for (j = 0; j < outConns.length; j++) {
 				var outy = outConns[j].outputNode;
@@ -310,12 +312,15 @@ FFNeuralNetwork.prototype.allIncomingConnections = function() {
 	}
 	return result;
 }
+FFNeuralNetwork.prototype.numLayers = function(includeInputs) {
+	return this.hiddenLayers.length + (includeInputs ? 2 : 1);
+}
 
 
 ////////////////// CONNECTIONS
 var ccc = 0;
 window.Connection = function(weight) {
-	this.weight = weight || RANDOM_WEIGHT();
+	this.weight = isNan(weight) ? RANDOM_WEIGHT() : weight;
 	this.blameFromOutput = 0;
 	this.input;
 	this.output;
@@ -368,7 +373,7 @@ function getOrCreateConnection(inputNode, outputNode, weight) { // only gives we
 
 //////////////////HIDDENS
 var NID = 0;
-window.HiddenNode = function(ann, layerNumber, nodeInLayer, activationFunction, biases) {
+window.HiddenNode = function(ann, layerNumber, nodeInLayer, activationFunction, bias) {
 	this.id = NID++;
 	this.ann = ann;
 	this.layerNumber = layerNumber;
@@ -377,12 +382,10 @@ window.HiddenNode = function(ann, layerNumber, nodeInLayer, activationFunction, 
 	this.outputConnections = [];
 	this.activationFunction = activationFunction;
 	this.activation = 0;
-	if (biases) this.giveBias(ann, biases);
+	if (bias) this.giveBias(bias);
 }
-HiddenNode.prototype.giveBias = function(ann, layer, weight) {
-	var bias = createInputNode(ann, -1, -1, SIGMOID, true);
+HiddenNode.prototype.giveBias = function(bias, weight) {
 	var conn = getOrCreateConnection(bias, this, weight);
-	layer.push(bias);
 }
 HiddenNode.prototype.predraw = function(x, y, r) {this.x = x; this.y = y; this.radius = r; return this;}
 

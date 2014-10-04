@@ -16,7 +16,8 @@
 	<td><button id="addANNBtn" style="font-size:18;padding:.8em">ADD NETWORK</button>
 	<td><button id="createANNBtn" style="font-size:18;padding:.8em">RANDOM NETWORK</button>
 	<td><button id="createPOPBtn" style="font-size:18;padding:.8em">CREATE POPULATION</button>
-	<td>size:<td><input id=popSize value=50></input></td>
+	<td><table><tr><td><div style="text-align:center;border:1px solid black; border-radius:.8em; padding:0 .8em;cursor: pointer" id=evoTypeSwitch1>Net Evo</div>
+	<tr><td>size:<input id=popSize value=50></input></td></table></td>
 </table></div>
 <hr>
 
@@ -58,12 +59,12 @@
 			<td style="vertical-align:top"><table>
 				<tr><td><button id="trainEVOBtn" style="font-size:18;padding:.8em;width:100%">EVOLUTION</button>
 				<table>
+				<tr><td><div style="text-align:center;border:1px solid black; border-radius:.8em; width:80%;cursor: pointer" id=evoTypeSwitch2>Net Evo</div>
+					<td><span id=mutWLabel>weight mutation:</span><input id=mutationRateW style="width:5em" value=15></input>%
 				<tr><td>epochs:<input id=gaEpochs style="width:5em" value=100></input>
-					<td>weight mutation:<input id=mutationRateW style="width:5em" value=15></input>%
+					<td><span id=mutNLabel>node mutation:</span><input id=mutationRateN style="width:5em" value=15></input>%
 				<tr><td>kill rate:<input id=killRate style="width:5em" value=50></input>%
-					<td>node mutation:<input id=mutationRateN style="width:5em" value=15></input>%
-				<tr><td>
-					<td>layer mutation:<input id=mutationRateL style="width:5em" value=15></input>%
+					<td><span id=mutLLabel>layer mutation:</span><input id=mutationRateL style="width:5em" value=15></input>%
 				</table>
 			</table>
 			
@@ -112,7 +113,8 @@ and will display the fittest memeber of the population.
 </body>
 <script>
 	function el(e) {return document.getElementById(e);}
-	function oneOf(v) {return v[Math.floor(Math.random() * v.length)];}
+	function oneOf(v) {return v[randomInt(v.length)];}
+	function isNan(x) {return x == null || !(Math.abs(x) >= 0);}
 	function contains(x, array) {
 		for (var i = 0; i < array.length; i++) if (array[i] == x) return true;
 		return false;
@@ -121,12 +123,16 @@ and will display the fittest memeber of the population.
 		for (var i = 0; i < array.length; i++) if (array[i] == x) return i;
 		return -1;
 	}
+	function randomInt(max) {
+		return Math.floor(Math.random() * max);
+	}
 </script>
 <script type="application/javascript" src="./dataGeneration.js"></script>
 <script type="application/javascript" src="./annBasics.js"></script>
 <script type="application/javascript" src="./backProp.js"></script>
 <script type="application/javascript" src="./transfer.js"></script>
 <script type="application/javascript" src="./geneticAlgo.js"></script>
+<script type="application/javascript" src="./reuseGA.js"></script>
 <script type="application/javascript" src="./control.js"></script>
 
 </html>

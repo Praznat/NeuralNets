@@ -62,11 +62,12 @@ el('createANNBtn').onclick = function() {USE_BIAS = el('useBias').checked; DISPL
 el('createPOPBtn').onclick = function() {
 	USE_BIAS = el('useBias').checked;
 	var n = el('popSize').value;
-	genAlgo.clearPop();
+	POPULATION = [];
 	genAlgo.maxPop = n;
+	if (genAlgo.isReuseAlgo && DISPLAY.anns.length < 2) {alert("ERROR: YOU NEED ANOTHER NETWORK FOR REUSE"); return;}
 	for (var i = 0; i < n; i++) {
-		var ann = createANN();
-		addToPop(ann, genAlgo.fitnessFunction, getData());
+		var genome = genAlgo.createRandomGenome();
+		addToPop(genome, genAlgo.fitnessFunction, getData());
 	}
 	genAlgo.displayPop();
 };
@@ -76,6 +77,7 @@ el('createTrainingData').onclick = function() {
 }
 el('clearTrainingData').onclick = function() {
 	el('samples').innerHTML = "";
+	console.log("cleartraining")
 	ann1().calcAccuracy();
 }
 el('trainingDataArea').value ="0,0:0\r\n1,0:1\r\n0,1:1\r\n1,1:0\r\n";
@@ -114,6 +116,27 @@ function createTransfers() {
 		DISPLAY.redraw();
 	}
 }
+
+var evoSwitch1 = el('evoTypeSwitch1'), evoSwitch2 = el('evoTypeSwitch2');
+evoSwitchFn = function() {
+	if (evoSwitch1.innerHTML == "Net Evo") {
+		evoSwitch1.innerHTML = "Reuse Evo";
+		evoSwitch2.innerHTML = "Reuse Evo";
+		el('mutWLabel').innerHTML = "weight mutation:";
+		el('mutNLabel').innerHTML = "I/O mutation:";
+		el('mutLLabel').innerHTML = "size mutation:";
+		genAlgo = REUSE_GA;
+	} else {
+		evoSwitch1.innerHTML = "Net Evo";
+		evoSwitch2.innerHTML = "Net Evo";
+		el('mutWLabel').innerHTML = "weight mutation:";
+		el('mutNLabel').innerHTML = "node mutation:";
+		el('mutLLabel').innerHTML = "layer mutation:";
+		genAlgo = new GeneticAlgo();
+	}
+}
+evoSwitch1.onclick = evoSwitchFn;
+evoSwitch2.onclick = evoSwitchFn;
 
 var INPUT_MATRIX = [];
 el('showInputMatrix').onclick = function() {
@@ -161,4 +184,18 @@ window.Iterator = function(array) {
 Iterator.prototype.next = function() {
 	this.i++;
 	return (this.i < this.array.length ? this.array[this.i] : null);
+}
+
+function debugStringAllConnections() {
+	var result = [];
+	for (var i = 0; i < DISPLAY.anns.length; i++) {
+		result.push("A", i,":");
+		var ics = DISPLAY.anns[i].allIncomingConnections();
+		for (var j = 0; j < ics.length; j++) {
+			var ic = ics[j];
+			if (ic.inputNode.ann != ic.outputNode.ann) result.push("TTT");
+			result.push("N", ic.inputNode.layerNumber, "/", ic.inputNode.nodeInLayer, "w", Math.floor(ic.weight*100));
+		}
+	}
+	return result.join('');
 }

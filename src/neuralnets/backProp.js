@@ -16,12 +16,6 @@ function propagateErrorFromOutput(connection, delta) {
 function isFrozen(connection) {
 	var freeANN = DISPLAY.anns[FOCUS],
 	inANN = connection.inputNode.ann, outANN = connection.outputNode.ann;
-//	if (inANN == outANN && inANN != freeANN) {
-//		console.log(inANN);
-//		console.log(outANN);
-//		console.log();
-//	}
-	
 	return inANN == outANN && inANN != freeANN; // free if cross-ANN or focus ANN
 }
 
@@ -38,10 +32,13 @@ function trainBackProp(ann, data) {
 function feedBack(ann, outTargets) {
 	var n = Math.min(outTargets.length, ann.outputs.length),
 		nowNodes = [], nextNodes = [], connsToClear = [];
+	var seenNodes = []; // to prevent infinite loop from recurrency
 	for (var i = 0; i < n; i++) {
 		var node = ann.outputs[i], derivative = node.activation * (1 - node.activation), // TODO depend on actFn
 			delta = derivative * (outTargets[i] - node.activation), inConns = node.inputConnections;
 //		console.log(delta +","+ derivative +","+ outTargets[i] +","+ node.activation);
+		if (contains(node, seenNodes)) continue;
+		else seenNodes.push(node);
 		for (var j = 0; j < inConns.length; j++) {
 			var ic = inConns[j];
 			propagateErrorFromOutput(ic, delta);
@@ -57,6 +54,8 @@ function feedBack(ann, outTargets) {
 		nextNodes = [];
 		for (var j = 0; j < nowNodes.length; j++) {
 			var node = nowNodes[j], sumBlame = 0, outConns = node.outputConnections;
+			if (contains(node, seenNodes)) continue;
+			else seenNodes.push(node);
 			for (var k = 0; k < outConns.length; k++) {
 				sumBlame += outConns[k].blameFromOutput;
 			}
