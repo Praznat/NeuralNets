@@ -1,0 +1,79 @@
+<html>
+<title>AI Deception Game</title>
+<body>
+<div>
+INTRO: This is a game that pits you (the player) against a neural network AI opponent.
+The player takes actions by pressing the action buttons (or pressing the corresponding keys).
+The AI tries to guess the next action the player takes based on a memory of previous actions.
+The player outsmarts the AI by taking actions that the AI fails to guess.
+The AI will generally do badly at first but gradually learns the player's behavior.
+You can cheat (and verify the AI is not cheating) by looking at the output of the neural network.
+</div><hr>
+
+<table style="width:100%"><tr>
+<td style="vertical-align:top;height:100%;width:50%">
+<div>
+<h2>Player Actions</h2>
+	<div id=userInputDiv><table>
+		<tr><td><button style="font-size:28;padding:.2em .9em" id=button1>Q</button>
+		<button style="font-size:28;padding:.2em .9em" id=button2>W</button>
+		<tr><td><div id=inputFeedback></div>
+	</table>
+	<div id=performanceStatsDiv>
+	</div>
+	<div id=scoreDiv>
+	<table><tr><td style="border: 1px solid black; padding:1em">Player wins
+				<td style="border: 1px solid black; padding:1em">AI wins
+	<tr><td style="text-align:center" id=playerWins>0
+		<td style="text-align:center" id=aiWins>0</table>
+	</div>
+</div>
+
+</div>
+<td style="vertical-align:top;height:100%;width:50%">
+<div>
+	<h2>AI Settings</h2>
+	<div id=annControlDiv><table>
+		<tr><td>Memory A <input style="font-size:18" id=memA value='6'></input>
+		<tr><td>Memory B <input style="font-size:18" id=memB value='4'></input>
+		<tr><td>Hidden Nodes <input style="font-size:18" id=numHiddens value='6'></input>
+		<tr><td style="display:none">Outputs <input style="font-size:18" id=numOutputs value='1'></input>
+		<tr><td>Bias<input style="font-size:18" id=useBias type=checkbox checked=true></input>
+		<tr><td>Learn Rate <input style="font-size:18" id=learnRate value='1.8'></input>
+		<tr><td><button style="font-size:28" id=resetButt>New Neural Network</button>
+		</table>
+	</div>
+	<div id=displayDiv>
+	</div>
+</div>
+</table>
+</body>
+
+<script>
+	function el(e) {return document.getElementById(e);}
+	function oneOf(v) {return v[randomInt(v.length)];}
+	function isNan(x) {return x == null || !(Math.abs(x) >= 0);}
+	function contains(x, array) {
+		for (var i = 0; i < array.length; i++) if (array[i] == x) return true;
+		return false;
+	}
+	function indexOf(x, array) {
+		for (var i = 0; i < array.length; i++) if (array[i] == x) return i;
+		return -1;
+	}
+	function randomInt(max) {
+		return Math.floor(Math.random() * max);
+	}
+	var LOGHALF = Math.log(.5);
+	function decayFactor(elapsed, halflife) {
+		return Math.exp(elapsed * LOGHALF / halflife);
+	}
+</script>
+<script type="application/javascript" src="./userInput.js"></script>
+<script type="application/javascript" src="./graph.js"></script>
+<script type="application/javascript" src="./ann.js"></script>
+<script type="application/javascript" src="./pretraining.js"></script>
+<script type="application/javascript" src="../neuralnets/backProp.js"></script>
+<script type="application/javascript" src="./init.js"></script>
+
+</html>

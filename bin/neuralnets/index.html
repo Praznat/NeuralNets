@@ -1,0 +1,138 @@
+<html>
+<title>JavaScript Neural Networks</title>
+<body>
+
+<div>
+	<table style="font-size:22;width:100%;text-align:center">
+	<tr><td>#Inputs<td>#Hiddens (n0,n1,n2,...)<td>#Outputs<td>Use Bias
+	<tr>
+		<td><input style="font-size:18" id=numInputs value=2></input>
+		<td><input style="font-size:18" id=numHiddens value='3,2'></input>
+		<td><input style="font-size:18" id=numOutputs value=1></input>
+		<td><input style="font-size:18" id=useBias type=checkbox></input>
+	</table>
+</div><br>
+<div style="text-align:center"><table style="margin:auto"><tr>
+	<td><button id="addANNBtn" style="font-size:18;padding:.8em">ADD NETWORK</button>
+	<td><button id="createANNBtn" style="font-size:18;padding:.8em">RANDOM NETWORK</button>
+	<td><button id="createPOPBtn" style="font-size:18;padding:.8em">CREATE POPULATION</button>
+	<td><table><tr><td><div style="text-align:center;border:1px solid black; border-radius:.8em; padding:0 .8em;cursor: pointer" id=evoTypeSwitch1>Net Evo</div>
+	<tr><td>size:<input id=popSize value=50></input></td></table></td>
+</table></div>
+<hr>
+
+<div>
+	<div style="text-align:center;font-size:14">POPULATION</div>
+	<div style="overflow:scroll"><table><tr id=populationBox></tr></table></div>
+</div>
+
+<hr>
+<div>
+	<div id=trainingAreaDiv style="width:30%;float:left;">
+		<table><tr><td><button id="showInputMatrix">Use input matrix</button>
+		<td style="font-size:12">rows:<input id=imRows value=6 style="width:3em"></input>
+		<td style="font-size:12">cols:<input id=imCols value=6 style="width:3em"></input></table>
+		<div id=inputMatrix></div>
+		<hr>
+		<div id=ruleMaker>L(x):
+			<div id=rmDisplay></div>
+			<table><tr><td><button id=rmNOT>NOT</button><td><button id=rmAND>AND</button>
+			<td><button id=rmX>X<sub id=rmi>0</sub></button>
+			<td><button id=rmInc>++i</button><td><button id=rmDec>--i</button></table>
+		</div>
+		<hr>
+		<div style="font-size:22">Training Data<br>
+			<textarea id="trainingDataArea" rows=10 style="font-size:14"></textarea><br>
+			<table><tr><td><button id=createTrainingData style="font-size:12;padding:.8em">Add data</button><br>
+			<td><button id=clearTrainingData style="font-size:12;padding:.8em">Clear data</button><br></table>
+			<div id=samples style="overflow:scroll;height:10em;border:1px solid black"></div>
+		</div>
+	</div>
+	<div style="width:70%;float:left">
+		<table><tr>
+			<td style="vertical-align:top"><table>
+				<tr><td><button id="trainANNBtn" style="font-size:18;padding:.8em;width:100%">BACKPROPAGATION</button>
+				<tr><td>epochs:<input id=bpEpochs style="width:5em" value=100></input>
+				<tr><td>learning rate:<input id=learnRate style="width:5em" value=1></input>
+			</table>
+			
+			<td style="vertical-align:top"><table>
+				<tr><td><button id="trainEVOBtn" style="font-size:18;padding:.8em;width:100%">EVOLUTION</button>
+				<table>
+				<tr><td><div style="text-align:center;border:1px solid black; border-radius:.8em; width:80%;cursor: pointer" id=evoTypeSwitch2>Net Evo</div>
+					<td><span id=mutWLabel>weight mutation:</span><input id=mutationRateW style="width:5em" value=15></input>%
+				<tr><td>epochs:<input id=gaEpochs style="width:5em" value=100></input>
+					<td><span id=mutNLabel>node mutation:</span><input id=mutationRateN style="width:5em" value=15></input>%
+				<tr><td>kill rate:<input id=killRate style="width:5em" value=50></input>%
+					<td><span id=mutLLabel>layer mutation:</span><input id=mutationRateL style="width:5em" value=15></input>%
+				</table>
+			</table>
+			
+			<td style="vertical-align:top"><table>
+				<tr><td><button id="connectANNBtn" style="font-size:18;padding:.8em;width:100%">CONNECT</button>
+				<tr><td>Borrower I/O:<input id=borrowerIO style="width:5em" value='0,1'></input>
+				<tr><td>Lender I/O:<input id=lenderIO style="width:5em" value='0,1'></input>
+				<tr><td>Lender ID:<input id=lenderId style="width:5em" value=0></input>
+				<tr><td id=connectError style="color:rgba(255,0,0,1)">
+			</table>
+		</table>
+		<table style="width:100%">
+		<tr><td style="width:50%"><div><table>
+			<tr><td>Selected Network:<td id=focus>
+			<tr><td>Classification error:<td id=cError>
+			<tr><td>Classification rate:<td id=cRate></table>
+		</div>
+		<td style="width:50%"><div><table><tr><td>Highlighted Node:<td id=hlNode></table></div>
+		</table>
+		<div style="background-color:rgba(250,250,250,1)" id=displayDiv></div>
+	</div>
+</div>
+<div style="display:inline-block"><p><br><p><br><p><br><p><br><p><br><p><br>
+<b>INSTRUCTIONS:</b>
+<p><b>Overview</b>
+<br>This page allows you to create, train, and visualize neural networks.
+<p><b>Input/Output Data</b>
+<br>The space under "Training Data" allows you to define new data to add to the training set,
+shown in the box below the "add data" and "clear data buttons".
+There must be some data in this box in order for training to proceed.
+To view how a particular data point feeds forward into the network, press "F" on the right side of that line of data.
+To run one back-propagation on that single data point, press "B" on the right.
+To delete a data point from the training set, press "X" on the right.
+<p><b>Back-propagation</b>
+<br>You can press "create network" to create a new random network with the desired architecture.
+The "backpropagation" button will train the displayed network on the selected training set with the desired parameters.
+<p><b>Evolution</b>
+<br>Press "create population" after loading training data to create the specified number of networks.
+They will be displayed under "population" in boxes showing their fitness figure.
+The "evolution" button will use a genetic algorithm with the desired parameters to train the population,
+and will display the fittest memeber of the population.
+<p><b>Other</b>
+<br>It is strongly suggested to check the "use bias" box, as networks with bias units are a great deal easier to train.
+
+</div>
+</body>
+<script>
+	function el(e) {return document.getElementById(e);}
+	function oneOf(v) {return v[randomInt(v.length)];}
+	function isNan(x) {return x == null || !(Math.abs(x) >= 0);}
+	function contains(x, array) {
+		for (var i = 0; i < array.length; i++) if (array[i] == x) return true;
+		return false;
+	}
+	function indexOf(x, array) {
+		for (var i = 0; i < array.length; i++) if (array[i] == x) return i;
+		return -1;
+	}
+	function randomInt(max) {
+		return Math.floor(Math.random() * max);
+	}
+</script>
+<script type="application/javascript" src="./dataGeneration.js"></script>
+<script type="application/javascript" src="./annBasics.js"></script>
+<script type="application/javascript" src="./backProp.js"></script>
+<script type="application/javascript" src="./transfer.js"></script>
+<script type="application/javascript" src="./geneticAlgo.js"></script>
+<script type="application/javascript" src="./reuseGA.js"></script>
+<script type="application/javascript" src="./control.js"></script>
+
+</html>

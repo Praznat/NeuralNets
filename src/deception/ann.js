@@ -12,7 +12,7 @@ var RANDOM_WEIGHT = function() {
 
 var BLACK = 'rgba(0,0,0,1)';
 var WHITE = 'rgba(255,255,255,1)';
-var USE_BIAS = false;
+var USE_BIAS = true;
 var MAX_ABS_WEIGHT = 5;
 var FOCUS = 0;
 var W_MULT = 1;
@@ -28,7 +28,7 @@ function lineWidthWeight(x) {
 	return Math.round(3 * Math.abs(x)) + 1;
 }
 
-window.ANNDisplay = function(parentElement) {
+window.ANNDisplay = function(parentElement, hlNodeEl) {
 
 	this.parent = parentElement;
 	CANVAS = this.canvas = document.createElement('canvas');
@@ -48,13 +48,12 @@ window.ANNDisplay = function(parentElement) {
 	CANVAS.addEventListener('click', function(event) {
 		FOCUS = Math.floor(event.offsetY / (CANVAS.offsetHeight / DISPLAY.anns.length));
 		DISPLAY.redraw();
-		DISPLAY.anns[FOCUS].calcAccuracy();
-		highlightNode(event.offsetX, event.offsetY);
+		highlightNode(event.offsetX, event.offsetY, hlNodeEl);
 	}, false);
 	
 }
 
-function highlightNode(mx, my) {
+function highlightNode(mx, my, hlNodeEl) {
 	
 	var ann = DISPLAY.anns[FOCUS], allLayers = [ann.inputs];
 	allLayers = allLayers.concat(ann.hiddenLayers).concat([ann.outputs]);
@@ -62,9 +61,9 @@ function highlightNode(mx, my) {
 		var layer = allLayers[i];
 		for (var j = 0; j < layer.length; j++) {
 			var node = layer[j];
-			if (node.x <= mx && node.x + node.radius * 2 >= mx
+			if (hlNodeEl && node.x <= mx && node.x + node.radius * 2 >= mx
 					&& node.y - node.radius <= my && node.y + node.radius >= my) {
-				el('hlNode').innerHTML = "L"+node.layerNumber + "N"+node.nodeInLayer
+				hlNodeEl.innerHTML = "L"+node.layerNumber + "N"+node.nodeInLayer
 					+ " a:" + Math.round(node.activation*100)/100;
 				console.log(node);
 				return;
@@ -75,12 +74,9 @@ function highlightNode(mx, my) {
 
 ANNDisplay.prototype.setANN = function(ann) {
 	var a = ann || createANN();
-	DEFAULT_TRANSFER_SET.disconnectTransfers();
 	this.anns[FOCUS] = a;
 	a.focusId = FOCUS;
-	DEFAULT_TRANSFER_SET.reconnectTransfers();
 	this.redraw();
-	a.calcAccuracy();
 	return a;
 }
 ANNDisplay.prototype.addANN = function() {
@@ -91,11 +87,11 @@ ANNDisplay.prototype.addANN = function() {
 }
 
 function createANN() {
-	var numIn = el('numInputs').value;
-	console.log(numIn)
-	console.log(el('numHiddens'))
+	var numIn = MEMORY_A_SIZE + MEMORY_B_SIZE;
 	var numHidden = el('numHiddens').value.split(',');
-	var numOut = el('numOutputs').value;
+	var numOut = NUM_ACTIONS; //el('numOutputs').value;
+	USE_BIAS = el('useBias').checked;
+	LEARNING_RATE = el('learnRate').value;
 	var result = createFFNeuralNetwork(numIn, numHidden, numOut);
 	return result;
 }
@@ -299,14 +295,7 @@ FFNeuralNetwork.prototype.calcHitRate = function(data) {
 	}
 	return numCorrect / data.length;
 }
-FFNeuralNetwork.prototype.calcAccuracy = function() {
-	feedBlanks();
-	var data = getData();
-	el('focus').innerHTML = FOCUS;
-	el('cError').innerHTML = Math.round(10000 * this.calcMSE(data)) / 10000;
-	el('cRate').innerHTML = Math.round(10000 * this.calcHitRate(data)) / 100 + "%";
-	DISPLAY.redraw();
-}
+
 FFNeuralNetwork.prototype.allIncomingConnections = function() {
 	var nodeLayers = this.hiddenLayers.concat([this.outputs]), result = [];
 	if (this.inputs.inputConnections) nodeLayers = nodeLayers.concat(this.inputs.inputConnections);
@@ -318,6 +307,22 @@ FFNeuralNetwork.prototype.allIncomingConnections = function() {
 }
 FFNeuralNetwork.prototype.numLayers = function(includeInputs) {
 	return this.hiddenLayers.length + (includeInputs ? 2 : 1);
+}
+function feedBlanks() {
+	for (var i = 0; i < DISPLAY.anns.length; i++) {
+		var blankIns = [], ann = DISPLAY.anns[i];
+		for (var i = 0; i < ann.inputs.length; i++) blankIns.push(0);
+		ann.feedForward(blankIns);
+	}
+}
+function ffT(ins) {
+	feedBlanks();
+	ann1().feedForward(ins);
+	DISPLAY.redraw();
+}
+function bbT(ins, outs) {
+	feedBack(ann1(), outs);
+	ffT(ins);
 }
 
 
@@ -506,6 +511,3 @@ function strokeTriangle(ctx, x, y, w, h) {
 	ctx.stroke();
 	ctx.closePath();
 }
-
-
-
