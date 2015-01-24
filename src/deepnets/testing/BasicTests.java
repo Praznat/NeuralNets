@@ -63,7 +63,7 @@ public class BasicTests {
 		System.out.println("BAYESIAN");
 		
 //		FFNeuralNetwork ffnn = new FFNeuralNetwork(ActivationFunction.SIGMOID0p5,5,5);
-		VariableTransitionApproximator modeler = new VariableTransitionApproximator(100, new int[] {}, ActivationFunction.SIGMOID0p5, 10);
+		ModelLearner modeler = new ModelLearner(100, new int[] {}, new int[] {5}, ActivationFunction.SIGMOID0p5, 10);
 		
 		Collection<DataPoint> data = new ArrayList<DataPoint>();
 		data.add(new DataPoint(new double[] {0,0,1,0,0}, new double[] {0,0,0,1,0})); // move right
@@ -80,18 +80,9 @@ public class BasicTests {
 			modeler.saveMemory();
 		}
 		modeler.learnFromMemory(1.5,0.5,0, false, 1000);
-		modeler.getNeuralNetwork().report(data);
+		modeler.getModelVTA().getNeuralNetwork().report(data);
 		
-		double[] foresight = Foresight.recurse(modeler.getNeuralNetwork(), new double[] {0,0,1,0,0}, 1);
-		for (double d : foresight) System.out.print(d + "	");
-		System.out.println(foresight[0] < 0.1 && foresight[1] > 0.4 && foresight[2] < 0.1 && foresight[3] > 0.4 && foresight[4] < 0.1
-			? "recurse 1 ok" : "recurse 1 sucks");
-		foresight = Foresight.recurse(modeler.getNeuralNetwork(), new double[] {0,0,1,0,0}, 2);
-		for (double d : foresight) System.out.print(d + "	");
-		System.out.println(foresight[0] > 0.4 && foresight[1] < 0.1 && foresight[2] > 0.2 && foresight[3] < 0.1 && foresight[4] < 0.1
-				? "recurse 2 ok" : "recurse 2 sucks");
-		
-		foresight = Foresight.montecarlo(modeler, new double[] {0,0,1,0,0}, null, 1, 100000, 0.1);
+		double[] foresight = Foresight.montecarlo(modeler, new double[] {0,0,1,0,0}, null, 1, 100000, 0.1);
 		for (double d : foresight) System.out.print(d + "	");
 		System.out.println(foresight[0] < 0.1 && foresight[1] > 0.4 && foresight[2] < 0.1 && foresight[3] > 0.4 && foresight[4] < 0.1
 			? "montecarlo 1 ok" : "montecarlo 1 sucks");
@@ -118,8 +109,8 @@ public class BasicTests {
 	}
 	
 	private static void transitionApproximator() {
-		VariableTransitionApproximator modeler = new VariableTransitionApproximator(500,
-				new int[] {5}, ActivationFunction.SIGMOID0p5, 50);
+		ModelLearner modeler = new ModelLearner(500,
+				new int[] {5}, new int[] {5}, ActivationFunction.SIGMOID0p5, 50);
 		double[][] inputSamples = {{0,0},{0,1},{1,0},{1,1}};
 		double[][] outputSamples = {{0},{1},{1},{0}};
 		Collection<DataPoint> data = DataPoint.createData(inputSamples, outputSamples);
@@ -132,14 +123,14 @@ public class BasicTests {
 			modeler.saveMemory();
 		}
 		modeler.learnFromMemory(2, 0.5, 0, false, 1000);
-		modeler.getNeuralNetwork().report(data);
+		modeler.getModelVTA().getNeuralNetwork().report(data);
 	}
 
 	
 	private static void fakePole() {
 		//TODO pls try to get this working with more buckets
-		VariableTransitionApproximator modeler = new VariableTransitionApproximator(100,
-				new int[] {30}, ActivationFunction.SIGMOID0p5, 500);
+		ModelLearner modeler = new ModelLearner(100,
+				new int[] {30}, new int[] {30}, ActivationFunction.SIGMOID0p5, 500);
 
 		final boolean NN_FORM = false;
 		double[] mins = Pole.stateMins;
@@ -178,7 +169,7 @@ public class BasicTests {
 //			System.out.println(s);
 //		}
 		for (int i = 0; i < 10; i++) System.out.println("*********");
-		System.out.println(modeler.getConfidenceEstimate());
+		System.out.println(modeler.getModelVTA().getConfidenceEstimate());
 		modeler.testit(1000, mins, maxes, stateTranslator, actTranslator, actions, NN_FORM);
 	}
 
@@ -199,8 +190,8 @@ public class BasicTests {
 			public double[] toNN(double... n) { return n; }
 			public double[] fromNN(double[] d) { return d; }
 		};
-		VariableTransitionApproximator modeler = new VariableTransitionApproximator(100,
-				new int[] {5}, ActivationFunction.SIGMOID0p5, 500);
+		ModelLearner modeler = new ModelLearner(100,
+				new int[] {5}, new int[] {5}, ActivationFunction.SIGMOID0p5, 500);
 		double[] envinputs = {0,1,2};
 		List<double[]> actions = Pole.actionChoices;
 		actions.add(new double[] {0});
@@ -218,7 +209,7 @@ public class BasicTests {
 		}
 		modeler.learnFromMemory(1.5, 0.5, 0, false, 5000);
 		for (int i = 0; i < 10; i++) System.out.println("*********");
-		System.out.println(modeler.getConfidenceEstimate());
+		System.out.println(modeler.getModelVTA().getConfidenceEstimate());
 		modeler.testit(1000, new double[] {envinputs[0]}, new double[] {envinputs[envinputs.length-1]},
 				stateTranslator, actTranslator, actions, true);
 		System.out.println("????????");

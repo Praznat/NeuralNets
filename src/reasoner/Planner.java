@@ -13,7 +13,7 @@ public abstract class Planner {
 	/** must use sigmoidal if representing probabilities 
 	 * @param actionTranslator 
 	 * @param stateTranslator */
-	public static Planner createMonteCarloPlanner(final VariableTransitionApproximator modeler, final int numSteps, final int numRuns,
+	public static Planner createMonteCarloPlanner(final ModelLearner modeler, final int numSteps, final int numRuns,
 			final RewardFunction rewardFn, final EnvTranslator stateTranslator, final EnvTranslator actionTranslator) {
 		return new Planner() {
 			@Override
@@ -22,22 +22,23 @@ public abstract class Planner {
 				if (Math.random() < explorePct) return RandomUtils.randomOf(actionChoices);
 				double[] bestActionChoice = null;
 				double bestReward = Double.NEGATIVE_INFINITY;
+				final boolean DEBUG = false;
 				String s = "";
-				s = debug1(s + " I :", stateTranslator.fromNN(initialStateVars));
+				if (DEBUG) s = debug1(s + " I :", stateTranslator.fromNN(initialStateVars));
 				for (double[] actionChoice : actionChoices) {
 					double[] outputs = Foresight.montecarlo(modeler, initialStateVars, actionChoice,
 							numSteps, numRuns, 0.00);
-					s = debug1(s + " A :", actionTranslator.fromNN(actionChoice));
-					s = debug1(s + " O :", outputs);
+					if (DEBUG) s = debug1(s + " A :", actionTranslator.fromNN(actionChoice));
+					if (DEBUG) s = debug1(s + " O :", outputs);
 					double reward = rewardFn.getReward(outputs);
 					reward *= Math.exp(2 * Math.random() * rewardMutationRate - rewardMutationRate);
-					s += "R=	" + reward + "	";
+					if (DEBUG) s += "R=	" + reward + "	";
 					if (reward > bestReward) {
 						bestReward = reward;
 						bestActionChoice = actionChoice;
 					}
 				}
-				System.out.println(s);
+				if (DEBUG) System.out.println(s);
 				return bestActionChoice;
 			}
 		};

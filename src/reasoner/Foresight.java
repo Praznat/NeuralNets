@@ -2,7 +2,7 @@ package reasoner;
 
 import java.util.Collection;
 
-import modeler.VariableTransitionApproximator;
+import modeler.*;
 import deepnets.*;
 
 public class Foresight {
@@ -17,7 +17,7 @@ public class Foresight {
 		return stateVars;
 	}
 	
-	public static double[] montecarlo(VariableTransitionApproximator modeler, double[] initialStateVars, double[] actionVars,
+	public static double[] montecarlo(ModelLearner modeler, double[] initialStateVars, double[] actionVars,
 			int numSteps, int numRuns, double skewFactor) {
 		double[] result = new double[initialStateVars.length];
 		if (actionVars != null) modeler.observeAction(actionVars);
@@ -30,10 +30,10 @@ public class Foresight {
 				modeler.observePreState(stateVars);
 				modeler.feedForward();
 				int j = 0;
-				Collection<? extends Node> outputs = modeler.getNeuralNetwork().getOutputNodes();
+				Collection<? extends Node> outputs = modeler.getModelVTA().getNeuralNetwork().getOutputNodes();
 				for (Node n : outputs) stateVars[j++] = n.getActivation();
 				stateVars = probabilisticRounding(probabilitySkewing(stateVars, skewFactor));
-				realism += estimateRealism(stateVars, modeler);
+				realism += estimateRealism(stateVars, modeler.getModelTRA());
 			}
 			for (int j = 0; j < result.length; j++) result[j] += stateVars[j] * realism;
 			totalRealism += realism;
@@ -42,7 +42,7 @@ public class Foresight {
 		return result;
 	}
 	
-	private static double estimateRealism(double[] stateVars, VariableTransitionApproximator modeler) {
+	private static double estimateRealism(double[] stateVars, TransitionRealismAssessor tra) {
 		// TODO use auxiliary realism network (prob < thresh -> false)
 		double t1 = 0; double t2 = 0; // HACK
 		for (int i = 0; i < stateVars.length/2; i++) t1 += stateVars[i];

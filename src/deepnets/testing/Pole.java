@@ -44,10 +44,10 @@ public class Pole extends Applet implements Runnable {
 	static final int NUM_BUCKETS = 8;
 	static EnvTranslator stateTranslator = EnvTranslator.rbfEnvTranslator(stateMins,
 			stateMaxes, new int[] {NUM_BUCKETS,NUM_BUCKETS}, .5);
-	final VariableTransitionApproximator modeler = new VariableTransitionApproximator(100, new int[] {NUM_BUCKETS*2},
-			ActivationFunction.SIGMOID0p5, 500);
+	final ModelLearner modeler = new ModelLearner(100, new int[] {NUM_BUCKETS*2},
+			new int[] {NUM_BUCKETS*2*2}, ActivationFunction.SIGMOID0p5, 500);
 	int frame = 0;
-	final int planningSteps = 10;
+	final int planningSteps = 1;
 	final Planner planner = Planner.createMonteCarloPlanner(modeler, planningSteps, 1000, new RewardFunction() {
 		@Override
 		public double getReward(double[] stateVars) {
@@ -58,7 +58,7 @@ public class Pole extends Applet implements Runnable {
 	int lastLoss = 0;
 	boolean wasSmart = false;
 	static final List<double[]> actionChoices = new ArrayList<double[]>();
-	private boolean lastWasLoss;
+	private boolean lastWasLoss = true;
 	{
 		actionChoices.add(new double[] {1,0});
 		actionChoices.add(new double[] {0,0});
@@ -168,14 +168,12 @@ public class Pole extends Applet implements Runnable {
 			modeler.observePostState(stateVars);
 			modeler.saveMemory();
 		}
-		if (lastWasLoss) {
-			double[] nnAction = planner.getOptimalAction(stateVars, actionChoices,
-					wasSmart ? 0.03 : 1, 0);
-			action = (int) actionTranslator.fromNN(nnAction)[0];
-//			if (action == 0 && velocity == 0) action = Math.random() < 0.5 ? 1 : -1; // hack for random init
-			modeler.observeAction(nnAction);
-			modeler.observePreState(stateVars);
-		}
+		double[] nnAction = planner.getOptimalAction(stateVars, actionChoices,
+				wasSmart ? 0.03 : 1, 0);
+		action = (int) actionTranslator.fromNN(nnAction)[0];
+		//			if (action == 0 && velocity == 0) action = Math.random() < 0.5 ? 1 : -1; // hack for random init
+		modeler.observeAction(nnAction);
+		modeler.observePreState(stateVars);
 		
 		lastWasLoss = false;
 		
@@ -203,6 +201,7 @@ public class Pole extends Applet implements Runnable {
 		angle += angleDot * tau;
 		angleDot += angleDDot * tau;
 
+		frame++;
 		if (Math.abs(angle) > 1.6) lose();
 	}
 	
@@ -210,14 +209,15 @@ public class Pole extends Applet implements Runnable {
 		modeler.learnFromMemory(1.5, 0.5, 0, false, 500, 100, smartThresh);
 		initVars();
 		lastWasLoss = true;
-		int thisLoss = frame++;
-		System.out.println((thisLoss - lastLoss) + "	" + modeler.getConfidenceEstimate() + "	" + (wasSmart?"*":""));
+		int thisLoss = frame;
+		double vtaConf = modeler.getModelVTA().getConfidenceEstimate();
+		System.out.println((thisLoss - lastLoss) + "	" + vtaConf + "	" + (wasSmart?"*":""));
 		lastLoss = thisLoss;
-		wasSmart = Math.random() < .5 && modeler.getConfidenceEstimate() < smartThresh;
-//		if (wasSmart && thisLoss > 3000) {
-//			for (double[] dd : tmpCorrel) System.out.println(dd[0] + "	" + dd[1]);
-//			modeler.testit(1000, stateMins, stateMaxes, stateTranslator, actionTranslator, actionChoices, false);
-//		}
+		wasSmart = Math.random() < .5 && vtaConf < smartThresh;
+		if (wasSmart && thisLoss > 3000) {
+			for (double[] dd : tmpCorrel) System.out.println(dd[0] + "	" + dd[1]);
+			modeler.testit(1000, stateMins, stateMaxes, stateTranslator, actionTranslator, actionChoices, false);
+		}
 	}
 
 	public void run() {
