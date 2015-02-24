@@ -3,17 +3,22 @@ package deepnets;
 public class AccruingWeight implements Weight {
 	
 	private double weight, newWeight, lastWgtChg, blameFromOutput;
+	private boolean frozen = false;
 
 	public AccruingWeight() {
 		this(DefaultParameters.RANDOM_WEIGHT());
 	}
 	public AccruingWeight(double w) {
+		this(w, false);
+	}
+	public AccruingWeight(double w, boolean freeze) {
 		this.weight = w;
 		this.newWeight = w;
 		this.lastWgtChg = 0;
+		this.frozen = freeze;
 	}
 	public void enactWeightChange() {
-		this.weight = this.newWeight;
+		if (!frozen) this.weight = this.newWeight;
 	}
 	@Override
 	public double getWeight() {
@@ -38,4 +43,11 @@ public class AccruingWeight implements Weight {
 		this.lastWgtChg = change;
 	}
 
+	public void frieze() {
+		this.frozen = true;
+	}
+
+	public void unFrieze() {
+		this.frozen = false;
+	}
 }

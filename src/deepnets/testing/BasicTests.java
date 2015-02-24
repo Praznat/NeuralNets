@@ -13,19 +13,21 @@ public class BasicTests {
 
 	public static void main(String[] args) {
 		xor();
+		modeling();
 		bayesian();
 		envtranslator();
 		transitionApproximator();
-//		modeling();
 		fakePole();
 	}
 
 	private static void xor() {
 		System.out.println("XOR");
-		Layer<Node> inputLayer = Layer.createInputLayer(2);
-		Layer<Node> hiddenLayer = Layer.createHiddenFromInputLayer(inputLayer, 2, ActivationFunction.SUPERSIGMOID);
+		Layer<Node> inputLayer = Layer.createInputLayer(2, Node.BASIC_NODE_FACTORY);
+		Layer<Node> hiddenLayer = Layer.createHiddenFromInputLayer(inputLayer, 2,
+				ActivationFunction.SUPERSIGMOID, Node.BASIC_NODE_FACTORY);
 		BiasNode.connectToLayer(hiddenLayer);
-		Layer<Node> outputLayer = Layer.createHiddenFromInputLayer(hiddenLayer, 1, ActivationFunction.SUPERSIGMOID);
+		Layer<Node> outputLayer = Layer.createHiddenFromInputLayer(hiddenLayer, 1,
+				ActivationFunction.SUPERSIGMOID, Node.BASIC_NODE_FACTORY);
 		BiasNode.connectToLayer(outputLayer);
 		double[][] inputSamples = {{0,0},{0,1},{1,0},{1,1}};
 		System.out.println("Untrained");
@@ -63,7 +65,8 @@ public class BasicTests {
 		System.out.println("BAYESIAN");
 		
 //		FFNeuralNetwork ffnn = new FFNeuralNetwork(ActivationFunction.SIGMOID0p5,5,5);
-		ModelLearner modeler = new ModelLearner(100, new int[] {}, new int[] {5}, ActivationFunction.SIGMOID0p5, 10);
+		ModelLearner modeler = new ModelLearnerHeavy(100, new int[] {}, new int[] {5},
+				new int[] {}, ActivationFunction.SIGMOID0p5, 10);
 		
 		Collection<DataPoint> data = new ArrayList<DataPoint>();
 		data.add(new DataPoint(new double[] {0,0,1,0,0}, new double[] {0,0,0,1,0})); // move right
@@ -75,23 +78,29 @@ public class BasicTests {
 //		ControlPanel.learnFromBackPropagation(ffnn.getInputNodes(), ffnn.getOutputNodes(), data,
 //				10000, 1,1,0,0,0,0);
 		for (DataPoint dp : data) {
-			modeler.observePreState(dp.getInputs());
-			modeler.observePostState(dp.getOutputs());
+			modeler.observePreState(dp.getInput());
+			modeler.observePostState(dp.getOutput());
 			modeler.saveMemory();
 		}
 		modeler.learnFromMemory(1.5,0.5,0, false, 1000);
-		modeler.getModelVTA().getNeuralNetwork().report(data);
+		modeler.getTransitionsModule().getNeuralNetwork().report(data);
 		
-		double[] foresight = Foresight.montecarlo(modeler, new double[] {0,0,1,0,0}, null, 1, 100000, 0.1);
+		double[] foresight = Foresight.montecarlo(modeler, new double[] {0,0,1,0,0}, null, 1, 10000, 10, 0.1);
 		for (double d : foresight) System.out.print(d + "	");
-		System.out.println(foresight[0] < 0.1 && foresight[1] > 0.4 && foresight[2] < 0.1 && foresight[3] > 0.4 && foresight[4] < 0.1
-			? "montecarlo 1 ok" : "montecarlo 1 sucks");
-		foresight = Foresight.montecarlo(modeler, new double[] {0,0,1,0,0}, null, 2, 100000, 0.1);
+		System.out.println(near(foresight[0],0) && near(foresight[1],0.5) && near(foresight[2],0)
+				&& near(foresight[3],0.5) && near(foresight[4],0)
+				? "montecarlo 1 ok" : "montecarlo 1 sucks");
+		foresight = Foresight.montecarlo(modeler, new double[] {0,0,1,0,0}, null, 2, 10000, 10, 0.1);
 		for (double d : foresight) System.out.print(d + "	");
-		System.out.println(foresight[0] > 0.4 && foresight[1] < 0.12 && foresight[2] > 0.2 && foresight[3] < 0.12 && foresight[4] < 0.12
+		System.out.println(near(foresight[0],0.5) && near(foresight[1],0) && near(foresight[2],0.25)
+				&& near(foresight[3],0) && near(foresight[4],0)
 				? "montecarlo 2 ok" : "montecarlo 2 sucks");
-		
+
 		return false;
+	}
+	
+	private static boolean near(double d1, double d2) {
+		return d1 < d2 + .1 && d1 > d2 - .1;
 	}
 	
 
@@ -109,17 +118,17 @@ public class BasicTests {
 	}
 	
 	private static void transitionApproximator() {
-		ModelLearner modeler = new ModelLearner(500,
+		ModelLearnerHeavy modeler = new ModelLearnerHeavy(500, new int[] {5}, 
 				new int[] {5}, new int[] {5}, ActivationFunction.SIGMOID0p5, 50);
 		double[][] inputSamples = {{0,0},{0,1},{1,0},{1,1}};
 		double[][] outputSamples = {{0},{1},{1},{0}};
 		Collection<DataPoint> data = DataPoint.createData(inputSamples, outputSamples);
 
 		for (DataPoint dp : data) {
-			double[] inputs = dp.getInputs();
+			double[] inputs = dp.getInput();
 			modeler.observePreState(inputs[0]);
 			modeler.observeAction(inputs[1]);
-			modeler.observePostState(dp.getOutputs());
+			modeler.observePostState(dp.getOutput());
 			modeler.saveMemory();
 		}
 		modeler.learnFromMemory(2, 0.5, 0, false, 1000);
@@ -129,7 +138,7 @@ public class BasicTests {
 	
 	private static void fakePole() {
 		//TODO pls try to get this working with more buckets
-		ModelLearner modeler = new ModelLearner(100,
+		ModelLearnerHeavy modeler = new ModelLearnerHeavy(100, new int[] {30},
 				new int[] {30}, new int[] {30}, ActivationFunction.SIGMOID0p5, 500);
 
 		final boolean NN_FORM = false;
@@ -173,46 +182,87 @@ public class BasicTests {
 		modeler.testit(1000, mins, maxes, stateTranslator, actTranslator, actions, NN_FORM);
 	}
 
-	/** THIS IS WORKING CORRECTLY */
 	private static void modeling() {
-		EnvTranslator stateTranslator = new EnvTranslator() {
-			double[][] dd = {{1,0,0},{0,1,0},{0,0,1}};
-			@Override
-			public double[] toNN(double... n) {
-				return dd[(int) n[0]];
-			}
-			@Override
-			public double[] fromNN(double[] d) {
-				return new double[] {d[0] * 0 + d[1] * 1 + d[2] * 2};
-			}
-		};
-		EnvTranslator actTranslator = new EnvTranslator() {
-			public double[] toNN(double... n) { return n; }
-			public double[] fromNN(double[] d) { return d; }
-		};
-		ModelLearner modeler = new ModelLearner(100,
-				new int[] {5}, new int[] {5}, ActivationFunction.SIGMOID0p5, 500);
-		double[] envinputs = {0,1,2};
-		List<double[]> actions = Pole.actionChoices;
-		actions.add(new double[] {0});
-		actions.add(new double[] {1});
-		for (int t = 0; t < 2000; t++) {
-			double envinput = RandomUtils.randomOf(envinputs);
-			double[] action = RandomUtils.randomOf(actions);
-			double envoutput = ((action[0] == 0 ? envinput - 1 : envinput + 1) + envinputs.length) % envinputs.length;
-			double[] nnIn = stateTranslator.toNN(envinput);
-			double[] nnOut = stateTranslator.toNN(envoutput);
-			modeler.observePreState(nnIn);
-			modeler.observeAction(action);
-			modeler.observePostState(nnOut);
-			modeler.saveMemory();
+		final double[][] inputs = new double[][] {{0,0},{0,0},{0,0}};
+		final double[][] outputs1 = new double[][] {{0,0},{1,1},{0,0}};
+		final double[][] outputs2 = new double[][] {{1,0},{0,1},{0,1}};
+		final DataPoint[] dp1 = new DataPoint[] {DataPoint.create(inputs[0], outputs1[0]),
+				DataPoint.create(inputs[1], outputs1[1]), DataPoint.create(inputs[2], outputs1[2])};
+		final DataPoint[] dp2 = new DataPoint[] {DataPoint.create(inputs[0], outputs2[0]),
+				DataPoint.create(inputs[1], outputs2[1]), DataPoint.create(inputs[2], outputs2[2])};
+		final DataPoint[] dps = Utils.append(dp1, dp2);
+		final int trainingEpochs = 100;
+		
+		// scenario 1
+		ModelLearnerHeavy modeler1 = learnModelFromData(dp1, trainingEpochs);
+		// scenario 2
+		ModelLearnerHeavy modeler2 = learnModelFromData(dp2, trainingEpochs);
+		
+//		printForData(modeler1, modeler1.getModelTFA(), dps);
+//		System.out.println();
+//		printForData(modeler2, modeler2.getModelTFA(), dps);
+		
+		// FAMILIARITY:
+		TransitionMemory tm = new TransitionMemory(new double[] {0,0}, new double[] {}, new double[] {.5,.4});
+		int jointRounds = 10;
+//		double[] newFamiliar1 = modeler1.upFamiliarity(tm, jointRounds, jointRounds, 1.5, .5, 0, 0.1);
+//		double[] newFamiliar2 = modeler2.upFamiliarity(tm, jointRounds, jointRounds, 1.5, .5, 0, 0.1);
+//		System.out.println(newFamiliar1[0] + "," + newFamiliar1[1] + "	vs	" + newFamiliar2[0] + "," + newFamiliar2[1]);
+	
+		for (int i = 0; i < 8; i++) {
+			double[] newJoint1 = modeler1.upJointOutput(tm, jointRounds);
+			double[] newJoint2 = modeler2.upJointOutput(tm, jointRounds);
+			System.out.println(Math.round(newJoint1[0]) + "," + Math.round(newJoint1[1])
+					+ "	vs	" + Math.round(newJoint2[0]) + "," + Math.round(newJoint2[1]));
 		}
-		modeler.learnFromMemory(1.5, 0.5, 0, false, 5000);
-		for (int i = 0; i < 10; i++) System.out.println("*********");
-		System.out.println(modeler.getModelVTA().getConfidenceEstimate());
-		modeler.testit(1000, new double[] {envinputs[0]}, new double[] {envinputs[envinputs.length-1]},
-				stateTranslator, actTranslator, actions, true);
-		System.out.println("????????");
+		System.out.println();
 	}
 	
+	private static ModelLearnerHeavy learnModelFromData(DataPoint[] data, int epochs) {
+		ModelLearnerHeavy modeler = new ModelLearnerHeavy(500,
+				new int[] {5}, new int[] {5}, new int[] {}, ActivationFunction.SIGMOID0p5, 50);
+		for (DataPoint dp : data) {
+			double[] inputs = dp.getInput();
+			modeler.observePreState(inputs[0]);
+			modeler.observeAction(inputs[1]);
+			modeler.observePostState(dp.getOutput());
+			modeler.saveMemory();
+		}
+		// TODO (not just testin) familiarity learning should run until error < e (.5?) on experience replay
+		modeler.learnFromMemory(1.5, 0.5, 0, false, epochs, 0.01);
+		return modeler;
+	}
+	
+	public static void testModelerModule(ModelLearnerHeavy ml, ModelerModule mm, TestInputGenerator tig, int times) {
+		for (int t = 0; t < times; t++) printForData(ml, mm, DataPoint.create(tig.generateTestInput(), null));
+	}
+	
+	public static void printForData(ModelLearnerHeavy ml, ModelerModule mm, DataPoint... data) {
+		for (DataPoint dp : data) {
+			ml.observePreState(dp.getInput());
+			if (dp.getOutput() != null) ml.observePostState(dp.getOutput());
+			ml.feedForward();
+			Collection<? extends Node> inputs = mm.getNeuralNetwork().getInputNodes();
+			Collection<? extends Node> outputs = mm.getNeuralNetwork().getOutputNodes();
+			String s = "I	";
+			for (Node n : inputs) s += n.getActivation() + "	";
+			s += "O	";
+			for (Node n : outputs) s += n.getActivation() + "	";
+			System.out.println(s);
+		}
+	}
+	
+	public static interface TestInputGenerator {
+		public double[] generateTestInput();
+	}
+	public static TestInputGenerator createTestInputGenerator(double[]... samples) {
+		final List<double[]> testSamples = new ArrayList<double[]>();
+		for (double[] s : samples) testSamples.add(s);
+		return new TestInputGenerator() {
+			@Override
+			public double[] generateTestInput() {
+				return RandomUtils.randomOf(testSamples);
+			}
+		};
+	}
 }

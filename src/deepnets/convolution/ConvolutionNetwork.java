@@ -43,9 +43,9 @@ public class ConvolutionNetwork implements NeuralNetwork {
 		for (ConvolutionLayer cl : lastLayers) lastNodes.addAll(cl.getNodes());
 
 		Layer<? extends Node> nextToLastLayer = Layer.createHiddenFromInputLayer(lastNodes, 10,
-				ActivationFunction.SIGMOID0p5);
+				ActivationFunction.SIGMOID0p5, Node.BASIC_NODE_FACTORY);
 		outputLayer = Layer.createHiddenFromInputLayer(nextToLastLayer.getNodes(), 5,
-				ActivationFunction.SIGMOID0p5);
+				ActivationFunction.SIGMOID0p5, Node.BASIC_NODE_FACTORY);
 	}
 
 	public ConvolutionLayer getInputLayer() {
@@ -86,12 +86,12 @@ public class ConvolutionNetwork implements NeuralNetwork {
 	}
 
 	@Override
-	public Collection<? extends Node> getInputNodes() {
+	public ArrayList<? extends Node> getInputNodes() {
 		return getInputLayer().getNodes();
 	}
 
 	@Override
-	public Collection<? extends Node> getOutputNodes() {
+	public ArrayList<? extends Node> getOutputNodes() {
 		return getOutputLayer().getNodes();
 	}
 

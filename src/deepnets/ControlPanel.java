@@ -43,8 +43,8 @@ public class ControlPanel {
 		for (int i = 0; i < epochs; i++) {
 			// stochasticity should correlate with (late-epoch) error
 			for (DataPoint dp : data) {
-				FFNeuralNetwork.feedForward(inputNodes, dp.getInputs());
-				FFNeuralNetwork.backPropagate(outputNodes, lRate, mRate, sRate, dp.getOutputs());
+				FFNeuralNetwork.feedForward(inputNodes, dp.getInput());
+				FFNeuralNetwork.backPropagate(outputNodes, lRate, mRate, sRate, dp.getOutput());
 			}
 			final double stErr = FFNeuralNetwork.stdError(inputNodes, outputNodes, data);
 			lRate = Utils.between(i, epochs, lRate0, lRateF);

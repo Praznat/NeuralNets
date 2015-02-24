@@ -7,31 +7,39 @@ import deepnets.convolution.*;
 
 public class FFNeuralNetwork implements NeuralNetwork {
 	
-	private final LinkedList<Layer<Node>> layers = new LinkedList<Layer<Node>>();
+	private final LinkedList<Layer<? extends Node>> layers = new LinkedList<Layer<? extends Node>>();
 	
 	public FFNeuralNetwork(ActivationFunction actFn, int numInputs, int numOutputs, int... numHidden) {
-		Layer<Node> inputLayer = Layer.createInputLayer(numInputs);
+		Node.Factory<? extends Node> nodeFactory = getNodeFactory();
+		Layer<? extends Node> inputLayer = Layer.createInputLayer(numInputs, nodeFactory);
 		layers.add(inputLayer);
-		Layer<Node> lastLayer = inputLayer;
+		Layer<? extends Node> lastLayer = inputLayer;
 		for (int h : numHidden) {
-			Layer<Node> hiddenLayer = Layer.createHiddenFromInputLayer(lastLayer, h, actFn);
+			Layer<? extends Node> hiddenLayer = Layer.createHiddenFromInputLayer(lastLayer, h, actFn, nodeFactory);
 			BiasNode.connectToLayer(hiddenLayer);
 			lastLayer = hiddenLayer;
 			layers.add(lastLayer);
 		}
-		Layer<Node> outputLayer = Layer.createHiddenFromInputLayer(lastLayer, numOutputs, actFn);
+		Layer<? extends Node> outputLayer = Layer.createHiddenFromInputLayer(lastLayer, numOutputs, actFn, nodeFactory);
 		layers.add(outputLayer);
 		BiasNode.connectToLayer(outputLayer);
 	}
+	protected Node.Factory<? extends Node> getNodeFactory() {
+		return Node.BASIC_NODE_FACTORY;
+	}
+	
 	@Override
-	public Collection<? extends Node> getInputNodes() {
+	public ArrayList<? extends Node> getInputNodes() {
 		return layers.get(0).getNodes();
 	}
 	@Override
-	public Collection<? extends Node> getOutputNodes() {
+	public ArrayList<? extends Node> getOutputNodes() {
 		return layers.get(layers.size()-1).getNodes();
 	}
 	
+	public Collection<Layer<? extends Node>> getLayers() {
+		return layers;
+	}
 	public int getNumLayers() {
 		return layers.size();
 	}
@@ -43,16 +51,16 @@ public class FFNeuralNetwork implements NeuralNetwork {
 		addNode(l, actFn, null);
 	}
 	public void addNode(int l, ActivationFunction actFn, AccruingWeight biasWeight) {
-		Layer<Node> layer = layers.get(l);
-		Node node = new Node(actFn, layer, String.valueOf(layer.getNodes().size()));
+		Layer<? extends Node> layer = layers.get(l);
+		Node node = getNodeFactory().create(actFn, layer, null);
 		layer.addNode(node);
 		int numLayers = layers.size();
 		if (l < numLayers - 1) {
-			Layer<Node> nextLayer = layers.get(l + 1);
+			Layer<? extends Node> nextLayer = layers.get(l + 1);
 			for (Node next : nextLayer.getNodes()) Connection.getOrCreate(node, next);
 		}
 		if (l > 0) {
-			Layer<Node> prevLayer = layers.get(l - 1);
+			Layer<? extends Node> prevLayer = layers.get(l - 1);
 			for (Node prev : prevLayer.getNodes()) Connection.getOrCreate(prev, node);
 		}
 		BiasNode.connectToNode(node, biasWeight);
@@ -62,8 +70,8 @@ public class FFNeuralNetwork implements NeuralNetwork {
 			Collection<? extends Node> outputNodes, Collection<DataPoint> data) {
 		double sumErr = 0;
 		for (DataPoint dp : data) {
-			feedForward(inputNodes, dp.getInputs());
-			double error = getError(dp.getOutputs(), outputNodes);
+			feedForward(inputNodes, dp.getInput());
+			double error = getError(dp.getOutput(), outputNodes);
 			sumErr += error;
 		}
 		return Math.sqrt(sumErr / data.size());
@@ -79,23 +87,27 @@ public class FFNeuralNetwork implements NeuralNetwork {
 		return error / target.length;
 	}
 	public static void feedForward(Collection<? extends Node> nodes, double... clampInputs) {
+		feedForward(nodes, null, clampInputs);
+	}
+	public static void feedForward(Collection<? extends Node> nodes, 
+			Collection<? extends Node> lastNodes, double... clampInputs) {
 		Collection<Node> nextNodes = new HashSet<Node>();
 		int i = 0;
 		for (Node n : nodes) {
 			if (i >= nodes.size()) break;
 			if (clampInputs != null) n.clamp(i < clampInputs.length ? clampInputs[i++] : 0);
-			else n.activate();
+			else n.preactivate(); // parallely
 			Collection<Connection> ocs = n.getOutputConnections();
 			for (Connection conn : ocs) nextNodes.add(conn.getOutputNode());
 		}
-		if (!nextNodes.isEmpty()) feedForward(nextNodes, null);
+		if (clampInputs == null) for (Node n : nodes) n.activate(); // parallely
+		if (lastNodes != null) nextNodes.removeAll(lastNodes); // avoid infinite loop
+		if (!nextNodes.isEmpty()) feedForward(nextNodes, nodes, null);
 	}
 	
 	public static void feedForward(ConvolutionNetwork cnn, BufferedImage img) {
 		cnn.getInputLayer().clamp(img);
-		for (ConvolutionLayer cl : cnn.getHiddenLayers(0)) {
-			feedForward(cl.getNodes(), null);
-		}
+		for (ConvolutionLayer cl : cnn.getHiddenLayers(0)) feedForward(cl.getNodes(), null);
 	}
 	
 	public static void backPropagate(Collection<? extends Node> nodes,
@@ -140,7 +152,7 @@ public class FFNeuralNetwork implements NeuralNetwork {
 	
 	public void report(Collection<DataPoint> data) {
 		for (DataPoint dp : data) {
-			FFNeuralNetwork.feedForward(getInputNodes(), dp.getInputs());
+			FFNeuralNetwork.feedForward(getInputNodes(), dp.getInput());
 			report();
 		}
 		System.out.println("E: " + FFNeuralNetwork.stdError(getInputNodes(), getOutputNodes(), data));

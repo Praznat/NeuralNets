@@ -1,10 +1,10 @@
 package deepnets;
 
-import java.util.Collection;
+import java.util.ArrayList;
 
 
 public interface NeuralNetwork {
-	public Collection<? extends Node> getInputNodes();
+	public ArrayList<? extends Node> getInputNodes();
 
-	public Collection<? extends Node> getOutputNodes();
+	public ArrayList<? extends Node> getOutputNodes();
 }

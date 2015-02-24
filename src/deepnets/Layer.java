@@ -2,21 +2,23 @@ package deepnets;
 
 import java.util.*;
 
+import deepnets.Node.Factory;
+
 public class Layer<N extends Node> {
-	private final Collection<N> nodes = new ArrayList<N>();
+	private final ArrayList<N> nodes = new ArrayList<N>();
 	
-	public static Layer<Node> create(int n, ActivationFunction actFn) {
+	public static Layer<Node> create(int n, ActivationFunction actFn, Factory<? extends Node> nodeFactory) {
 		Layer<Node> result = new Layer<Node>();
-		for (int i = 0; i < n; i++) result.addNode(new Node(actFn, result, String.valueOf(i)));
+		for (int i = 0; i < n; i++) result.addNode(nodeFactory.create(actFn, result, String.valueOf(i)));
 		return result;
 	}
-	public static Layer<Node> createInputLayer(int n) {
-		return create(n, ActivationFunction.LINEAR);
+	public static Layer<Node> createInputLayer(int n, Node.Factory<? extends Node> nodeFactory) {
+		return create(n, ActivationFunction.LINEAR, nodeFactory);
 	}
 
 	public static Layer<Node> createHiddenFromInputLayer(Collection<? extends Node> nodes, int n,
-			ActivationFunction actFn) {
-		Layer<Node> result = create(n, actFn);
+			ActivationFunction actFn, Node.Factory<? extends Node> nodeFactory) {
+		Layer<Node> result = create(n, actFn, nodeFactory);
 		for (Node inputNode : nodes) {
 			for (Node outputNode : result.getNodes()) {
 				Connection.getOrCreate(inputNode, outputNode);
@@ -25,15 +27,16 @@ public class Layer<N extends Node> {
 		return result;
 	}
 	public static Layer<Node> createHiddenFromInputLayer(Layer<? extends Node> inputLayer, int n,
-			ActivationFunction actFn) {
-		return createHiddenFromInputLayer(inputLayer.getNodes(), n, actFn);
+			ActivationFunction actFn, Node.Factory<? extends Node> nodeFactory) {
+		return createHiddenFromInputLayer(inputLayer.getNodes(), n, actFn, nodeFactory);
 	}
 
-	protected void addNode(N n) {
-		getNodes().add(n);
+	@SuppressWarnings("unchecked")
+	protected void addNode(Node n) {
+		getNodes().add((N) n);
 	}
 
-	public Collection<N> getNodes() {
+	public ArrayList<N> getNodes() {
 		return nodes;
 	}
 	public void clamp(double... inputs) {

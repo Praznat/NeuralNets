@@ -37,7 +37,9 @@ public class TransitionMemory implements Memory {
 	}
 	
 	public double[] getPostState() {
-		return postStateVars;
+		double[] result = new double[postStateVars.length];
+		System.arraycopy(postStateVars, 0, result, 0, postStateVars.length);
+		return result;
 	}
 
 }

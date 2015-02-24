@@ -4,6 +4,11 @@ import java.util.List;
 
 public class RandomUtils {
 
+	public static double[] randomBits(int len) {
+		double[] result = new double[len];
+		for (int i = 0; i < len; i++) result[i] = Math.random() < 0.5 ? 0 : 1;
+		return result;
+	}
 	public static double randomOf(double[] d) {
 		return d[(int) (Math.random() * d.length)];
 	}

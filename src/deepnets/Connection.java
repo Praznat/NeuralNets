@@ -52,4 +52,9 @@ public class Connection {
 		return outputNode;
 	}
 
+	@Override
+	public String toString() {
+		return "C" + Utils.round(weight.getWeight(), 2);
+	}
+	
 }

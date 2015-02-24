@@ -11,11 +11,11 @@ public class DataPoint {
 		this.output = output;
 	}
 
-	public double[] getInputs() {
+	public double[] getInput() {
 		return input;
 	}
 
-	public double[] getOutputs() {
+	public double[] getOutput() {
 		return output;
 	}
 	
@@ -30,6 +30,15 @@ public class DataPoint {
 
 	public static DataPoint create(double[] inputActivations, double[] outputTargets) {
 		return new DataPoint(inputActivations.clone(), outputTargets.clone());
+	}
+	
+	@Override
+	public String toString() {
+		String s = "I: ";
+		for (double d : input) s += d+",";
+		s += " O: ";
+		for (double d : output) s += d+",";
+		return s;
 	}
 
 }

@@ -1,0 +1,116 @@
+
+
+
+
+
+Neural-network based model learning
+
+Goals:
+1. Use neural networks to learn an approximate encoding of an environment (Markov decision process)
+2. Avoid state space explosion by keeping network complexity only polynomial in the number of state variables
+3. Achieve a generative model such that, given a current state and action, it can guess the subsequent state
+with some measure of performance (probably approximately correct or statistically significantly better than random)
+4. Learned model should be independent from planner and reward function
+
+We will call a model learner that achieves the above goals a Variable Transition Approximation Network (VTAN)
+
+Achievements	Policy-based	Value-function	Approx.Value-function	Bayes Net	VTAN
+1				N				Y				Y						N			Y
+2				Y				N				Y						?			Y
+3				N				N				N						Y			Y
+4				N				N				N						Y			Y
+
+Definitions:
+1. Transition
+A Markov decision process is defined by transitions, which are represented as probabilities of moving to
+a new state given a current state and action, such that all such probabilities from a current state and
+action sum to 1.
+2. Pre-state variables X
+The values of the variables that comprise the current state (the "before" state in a transition)
+3. Action variables A
+The values of the variables that comprise an action that affects the transition
+4. Post-state variables X'
+The values of the variables that comprise the subsequent state (the "after" state in a transition)
+
+Components:
+1. Variable Transition Approximator (VTA)
+This is a neural network that learns to associate X and A with X'. It learns at each step by feeding
+the current state variables and action variables into the inputs, then transitioning to a next state
+and using its variables as the outputs, then employing some learning method such as backpropagation.
+Over time, it will learn to predict changes in the state variables caused by the transitions. In order
+to generate a guess for a subsequent state given a current state and action, it feeds forward the 
+current state and action variables to obtain outputs ranging from 0 to 1. The predicted state is composed
+of variables of value 0 or 1 given by probabilities equaling the network outputs. If all of the state
+variables are discrete and independent of one another, the VTA will be sufficient to model transitions.
+DBNs : "factored states"
+2. Inter-variable Relationship Modeler (IRM)
+If some variables are correlated, another step is necessary to ensure only realistic states are
+predicted. To illustrate, consider the following two example environments.
+In environment 1, the only two reachable states are {0,0} and {1,1}.
+In environment 2, the only two reachable states are {1,0} and {0,1}.
+In both environments the probability of reaching each state is 50% regardless of the previous state and
+action (for simplicity). Now in both cases, a neural network model learner will learn to output
+approximately {0.5, 0.5} for all transitions, and all four states will be predicted at equal rates for
+both environments. In order to only predict states that are reachable in the learned environment, the
+predicted state from the VTA is fed into an IRM neural network to arrive at more appropriate outputs.
+This step can be repeated multiple times for better results. The IRM is trained simultaneously with the VTA.
+At each transition, the inputs to the IRM are all variables X, A, and X', and the target output is X'.
+Thus, the IRM approximates X' given an initial guess of X' using learned correlations between variables.
+
+Environments with Continuous Variables
+
+"chainprocessing":
+Experience/observations -> model learner -> planner -> actions
+beliefs vs desires
+
+weight-decay and symbolization
+redundancy -> transfer
+find several similar subnetworks throughout net that can be replaced by rerouting through single subnetwork
+symbolismo
+
+domains - truth-teller / liar games
+
+Why Neural Networks?
+Even without traversing the entire state space, a neural network may capture patterns that allow an agent
+to make "educated guesses" about parts of the state space it has not trained on. This ability has been exploited
+already by reinforcement learning methods based on "approximate value functions". The difference being that
+instead of only trying to approximate the reward based on state variables, the whole model learner approximates
+the transitions in all of the state variables.
+Deep learning
+
+Why separate reward function?
+Learning is its own reward; play behavior in animals; learning about environment before reward is relevant;
+adapting to new and changing reward functions
+Learning reward function is separate problem
+"goal-based" (cite neuro stuff) decision of goal can be volatile (just because i forget what im doing doesnt mean
+i forget how the world works)
+
+Why separate planning?
+
+Why generative rather than discriminative model?
+Imagination. Monte Carlo simulation.
+
+
+About learning hidden state variables
+
+cellular automata -> HyperNEAT can reuse patterns!
+
+
+generative vs discriminative
+imagine 2 ways the power to see the future might work
+1. you see what is going to happen (you immediately imagine the most likely scenario)
+2. your power is to tell whether a scenario is going to happen, given an imagined scenario,
+but your power is not to immediately imagine the most likely one.
+
+Familiarity module is like having option 2 (ability to evaluate scenario)
+VTA is like having a shitty option 1 (ability to imagine likely scenario)
+IRM is like being able to move your shitty result from VTA towards more likely scenario
+
+novelty search should reduce exploration time
+throwing out similar samples during training should speed up training
+
+cite other neuro-sybolic papers
+cite approx dynamic programming
+
+https://www.cis.upenn.edu/~mkearns/papers/reinforcement.pdf
+polynomial in number of STATES
