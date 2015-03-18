@@ -17,8 +17,8 @@ public class AccruingWeight implements Weight {
 		this.lastWgtChg = 0;
 		this.frozen = freeze;
 	}
-	public void enactWeightChange() {
-		if (!frozen) this.weight = this.newWeight;
+	public void enactWeightChange(double decay) {
+		if (!frozen) this.weight = this.newWeight * (1 - decay);
 	}
 	@Override
 	public double getWeight() {

@@ -53,6 +53,15 @@ public class Node {
 		return outputConnections;
 	}
 	
+	/** same as non-raw unless sparse node */
+	public Collection<Connection> getRawInputConnections() {
+		return inputConnections;
+	}
+	/** same as non-raw unless sparse node */
+	public Collection<Connection> getRawOutputConnections() {
+		return outputConnections;
+	}
+	
 	@Override
 	public String toString() {
 		return parentLayer.toString() + nodeInLayer + " A:" + activation;

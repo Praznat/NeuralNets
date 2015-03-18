@@ -2,10 +2,7 @@ var CANVAS;
 
 console.log("ANN");
 
-var GLOBAS_BIAS = 0.5;
-var SIGMOID = function(x) {
-	return 1 / (1 + Math.exp(GLOBAS_BIAS - x));
-}
+var ACT_FN = SIGMOID;//RECTIFIER;
 var RANDOM_WEIGHT = function() {
 	return oneOf([-1, -.5, -.2, 0, .2, .5, 1]) / W_MULT;
 }
@@ -131,14 +128,14 @@ window.FFNeuralNetwork = function() {}
 function createFFNeuralNetwork(numInputs, numHiddenNodesArray, numOutputs) {
 	var ann = new FFNeuralNetwork();
 	ann.inputs = [];
-	if (USE_BIAS) ann.bias = createInputNode(ann, -1, -1, SIGMOID, true);
-	for (var i = 0; i < numInputs; i++) ann.inputs.push(createInputNode(ann, 0, i, SIGMOID));
+	if (USE_BIAS) ann.bias = createInputNode(ann, -1, -1, ACT_FN, true);
+	for (var i = 0; i < numInputs; i++) ann.inputs.push(createInputNode(ann, 0, i, ACT_FN));
 	ann.hiddenLayers = [];
 	var prevNodes = ann.inputs;
 	for (var i = 0; i < numHiddenNodesArray.length; i++) {
 		var hiddenNodes = [];
 		for (var j = 0; j < numHiddenNodesArray[i]; j++) hiddenNodes.push(
-				new HiddenNode(ann, i+1, j, SIGMOID, ann.bias));
+				new HiddenNode(ann, i+1, j, ACT_FN, ann.bias));
 		ann.hiddenLayers.push(hiddenNodes);
 		for (var k = 0; k < hiddenNodes.length; k++) {
 			for (var kk = 0; kk < prevNodes.length; kk++) {
@@ -150,7 +147,7 @@ function createFFNeuralNetwork(numInputs, numHiddenNodesArray, numOutputs) {
 	}
 	ann.outputs = [];
 	for (var i = 0; i < numOutputs; i++) {
-		ann.outputs.push(new HiddenNode(ann, ann.hiddenLayers.length + 1, i, SIGMOID, ann.bias));
+		ann.outputs.push(new HiddenNode(ann, ann.hiddenLayers.length + 1, i, ACT_FN, ann.bias));
 		for (var j = 0; j < prevNodes.length; j++) {
 			getOrCreateConnection(prevNodes[j], ann.outputs[i]);
 		}
@@ -402,7 +399,7 @@ HiddenNode.prototype.activate = function(x) {
 		var ic = this.inputConnections[i];
 		sum += ic.weight * ic.inputNode.activation;
 	}
-	this.activation = this.activationFunction(sum);
+	this.activation = this.activationFunction.process(sum);
 }
 HiddenNode.prototype.addInputConnection = function(connection) {
 	this.inputConnections.push(connection);

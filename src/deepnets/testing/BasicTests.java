@@ -13,11 +13,12 @@ public class BasicTests {
 
 	public static void main(String[] args) {
 		xor();
-		modeling();
 		bayesian();
+		modelingContinuous();
+		fakePole();
+		modeling();
 		envtranslator();
 		transitionApproximator();
-		fakePole();
 	}
 
 	private static void xor() {
@@ -138,8 +139,9 @@ public class BasicTests {
 	
 	private static void fakePole() {
 		//TODO pls try to get this working with more buckets
+		int turns = 1000;
 		ModelLearnerHeavy modeler = new ModelLearnerHeavy(100, new int[] {30},
-				new int[] {30}, new int[] {30}, ActivationFunction.SIGMOID0p5, 500);
+				new int[] {30}, new int[] {30}, ActivationFunction.SIGMOID0p5, turns);
 
 		final boolean NN_FORM = false;
 		double[] mins = Pole.stateMins;
@@ -151,7 +153,7 @@ public class BasicTests {
 //		actions.add(new double[] {0,0});
 		actions.add(new double[] {0,1});
 		final Collection<double[]> tmpCorrel = new ArrayList<double[]>();
-		for (int t = 0; t < 2000; t++) {
+		for (int t = 0; t < turns; t++) {
 			double[] preState = new double[mins.length];
 			for (int i = 0; i < preState.length; i++) {
 				final double spread = (maxes[i] - mins[i]) / 10;
@@ -167,7 +169,7 @@ public class BasicTests {
 			double r = act/100;
 			for (int i = 0; i < postState.length; i++) {
 				postState[i] = preState[i] * Math.exp(Math.signum(preState[i]) * (i == 0 ? r : -r));
-			}
+			} // act0 moves state[0] up and state[1] down, act1 moves state[0] down and state[1] up
 			tmpCorrel.add(new double[] {act, postState[0] - preState[0]});
 			modeler.observePostState(stateTranslator.toNN(postState));
 			modeler.saveMemory();
@@ -179,9 +181,46 @@ public class BasicTests {
 //		}
 		for (int i = 0; i < 10; i++) System.out.println("*********");
 		System.out.println(modeler.getModelVTA().getConfidenceEstimate());
-		modeler.testit(1000, mins, maxes, stateTranslator, actTranslator, actions, NN_FORM);
+//		modeler.testit(1000, mins, maxes, stateTranslator, actTranslator, actions, NN_FORM);
+		
+		for (int t = 0; t < 500; t++) {
+			final double[] state = new double[mins.length];
+			for (int i = 0; i < state.length; i++) state[i] = RandomUtils.randBetween(mins[i], maxes[i]);
+			String s = "";
+			for (double d : state) s += d + "	";
+			for (double[] act : actions) {
+				double[] foresight = Foresight.montecarlo(modeler, stateTranslator.toNN(state), act, 1, 100, 30, 0);
+				double[] postV = stateTranslator.fromNN(foresight);
+				s += "act:" + actTranslator.fromNN(act) + ":	";
+				for (double d : postV) s += Utils.round(d * 100, 2) + "	";
+			}
+			System.out.println(s);
+		}
 	}
 
+	private static void modelingContinuous() {
+		ModelLearnerHeavy modeler = new ModelLearnerHeavy(500, new int[] {5}, 
+				new int[] {5}, new int[] {5}, ActivationFunction.SIGMOID0p5, 50);
+		double[][] inputSamples = {{0.55,0.45,1},{0.35,0.65,1},{0.25,0.75,-1},{0.85,0.15,-1}};
+		double[][] outputSamples = {{0.75, 0.25},{0.55, 0.45},{0.05, 0.95},{0.65, 0.35}};
+		Collection<DataPoint> data = DataPoint.createData(inputSamples, outputSamples);
+
+		for (DataPoint dp : data) {
+			double[] inputs = dp.getInput();
+			modeler.observePreState(new double[] {inputs[0], inputs[1]});
+			modeler.observeAction(inputs[2]);
+			modeler.observePostState(dp.getOutput());
+			modeler.saveMemory();
+		}
+		modeler.learnFromMemory(2, 0.5, 0, false, 1000);
+		modeler.getModelVTA().getNeuralNetwork().report(data);
+		for (int i = 0; i < inputSamples.length; i++) {
+			double[] foresight = Foresight.montecarlo(modeler, inputSamples[i], null, 1, 10000, 10, 0.1);
+			for (double d : foresight) System.out.print(d + "	");
+			System.out.println();
+		}
+	}
+	
 	private static void modeling() {
 		final double[][] inputs = new double[][] {{0,0},{0,0},{0,0}};
 		final double[][] outputs1 = new double[][] {{0,0},{1,1},{0,0}};
@@ -215,7 +254,8 @@ public class BasicTests {
 			System.out.println(Math.round(newJoint1[0]) + "," + Math.round(newJoint1[1])
 					+ "	vs	" + Math.round(newJoint2[0]) + "," + Math.round(newJoint2[1]));
 		}
-		System.out.println();
+		System.out.println("Above left column should be mostly 0,0 sometimes 1,1. right column should "
+				+ "be mostly 1,0 sometimes 0,1");
 	}
 	
 	private static ModelLearnerHeavy learnModelFromData(DataPoint[] data, int epochs) {

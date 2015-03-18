@@ -91,4 +91,18 @@ public interface ActivationFunction {
 			return output;
 		}
 	};
+	public static final ActivationFunction RECTIFIER = new ActivationFunction() {
+		@Override
+		public double feed(double input) {
+			return Math.max(0, input);
+		}
+		@Override
+		public double derivative(double activation) {
+			return activation < 0 ? 0 : 1;
+		}
+		@Override
+		public double backfeed(double output) {
+			throw new IllegalStateException("can't calculate exact input");
+		}
+	};
 }

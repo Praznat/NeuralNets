@@ -34,7 +34,7 @@ function feedBack(ann, outTargets) {
 		nowNodes = [], nextNodes = [], connsToClear = [];
 	var seenNodes = []; // to prevent infinite loop from recurrency
 	for (var i = 0; i < n; i++) {
-		var node = ann.outputs[i], derivative = node.activation * (1 - node.activation), // TODO depend on actFn
+		var node = ann.outputs[i], derivative = ACT_FN.derivative(node.activation), // TODO depend on actFn
 			delta = derivative * (outTargets[i] - node.activation), inConns = node.inputConnections;
 //		console.log(delta +","+ derivative +","+ outTargets[i] +","+ node.activation);
 		if (contains(node, seenNodes)) continue;

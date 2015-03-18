@@ -82,7 +82,7 @@ public class CellAutomataGame extends GridGame {
 	}
 	static void test1() {
 		int size = 4;
-		int turns = 2000;
+		int turns = size*size*500;
 		ModelLearnerHeavy modeler = new ModelLearnerHeavy(500, new int[] {size * size * 2},
 				new int[] {}, new int[] {}, ActivationFunction.SIGMOID0p5, turns);
 		int tests = 10;
@@ -95,7 +95,7 @@ public class CellAutomataGame extends GridGame {
 			observeGame(modeler, size, turns / tests, pOn, trainingTimeMs, true);
 			System.out.println("finished cell automata");
 		}
-		modeler.learnFromMemory(1.5, 0.5, 0, false, 200, 30000);
+		modeler.learnFromMemory(1.5, 0.5, 0, false, 500, 30000);
 		
 		CellAutomataGame game = new CellAutomataGame(size, size, GAME_OF_LIFE);
 		game.mode = 1;

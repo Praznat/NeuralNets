@@ -35,7 +35,7 @@ public abstract class Planner {
 				if (Math.random() < explorePct) return RandomUtils.randomOf(actionChoices);
 				double[] bestActionChoice = null;
 				double bestReward = Double.NEGATIVE_INFINITY;
-				boolean DEBUG = false;
+				boolean DEBUG = true;
 				if (stateTranslator == null || actionTranslator == null) DEBUG = false;
 				String s = "";
 				if (DEBUG) s = debug1(s + " I :", stateTranslator.fromNN(initialStateVars));

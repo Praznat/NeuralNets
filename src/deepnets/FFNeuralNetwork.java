@@ -8,9 +8,11 @@ import deepnets.convolution.*;
 public class FFNeuralNetwork implements NeuralNetwork {
 	
 	private final LinkedList<Layer<? extends Node>> layers = new LinkedList<Layer<? extends Node>>();
+	private final Node.Factory<? extends Node> nodeFactory;
 	
-	public FFNeuralNetwork(ActivationFunction actFn, int numInputs, int numOutputs, int... numHidden) {
-		Node.Factory<? extends Node> nodeFactory = getNodeFactory();
+	public FFNeuralNetwork(ActivationFunction actFn, int numInputs, int numOutputs,
+			Node.Factory<? extends Node> nodeFactory, int... numHidden) {
+		this.nodeFactory = nodeFactory;
 		Layer<? extends Node> inputLayer = Layer.createInputLayer(numInputs, nodeFactory);
 		layers.add(inputLayer);
 		Layer<? extends Node> lastLayer = inputLayer;
@@ -24,8 +26,11 @@ public class FFNeuralNetwork implements NeuralNetwork {
 		layers.add(outputLayer);
 		BiasNode.connectToLayer(outputLayer);
 	}
+	public FFNeuralNetwork(ActivationFunction actFn, int numInputs, int numOutputs, int... numHidden) {
+		this(actFn, numInputs, numOutputs, Node.BASIC_NODE_FACTORY, numHidden);
+	}
 	protected Node.Factory<? extends Node> getNodeFactory() {
-		return Node.BASIC_NODE_FACTORY;
+		return nodeFactory;
 	}
 	
 	@Override
@@ -111,8 +116,8 @@ public class FFNeuralNetwork implements NeuralNetwork {
 	}
 	
 	public static void backPropagate(Collection<? extends Node> nodes,
-			double learningRate, double momentum, double stochasticity, double... targets) {
-		// TODO stochasticity is wrong mutation shouldnt be completely new random number but small change
+			double learningRate, double momentum, double wgtDecay, double... targets) {
+		// TODO stochasticity 
 		Collection<Node> nextNodes = new HashSet<Node>();
 		Collection<AccruingWeight> weights = new ArrayList<AccruingWeight>();
 		int i = 0;
@@ -131,15 +136,13 @@ public class FFNeuralNetwork implements NeuralNetwork {
 			for (Connection conn : ics) {
 				final Node inNode = conn.getInputNode();
 				final AccruingWeight w = conn.getWeight();
-				if (stochasticity != 0) delta *= Utils.randomGaussianExpRate(stochasticity);
 				w.propagateError(delta, inNode.getActivation(), learningRate, momentum, false);
-				if (Math.random() < stochasticity) w.setWeight(DefaultParameters.RANDOM_WEIGHT());
 				weights.add(w);
 				nextNodes.add(inNode);
 			}
 		}
-		for (AccruingWeight w : weights) w.enactWeightChange();
-		if (!nextNodes.isEmpty()) backPropagate(nextNodes, learningRate, momentum, stochasticity, null);
+		for (AccruingWeight w : weights) w.enactWeightChange(wgtDecay);
+		if (!nextNodes.isEmpty()) backPropagate(nextNodes, learningRate, momentum, wgtDecay, null);
 	}
 	
 	public static void trainRBM(Collection<? extends Node> nodes, double... clampInputs) {

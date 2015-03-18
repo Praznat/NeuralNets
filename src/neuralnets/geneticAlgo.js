@@ -151,7 +151,7 @@ GeneticAlgo.prototype.fromGenotype = function(dna) {
 			onFirstHiddenLayer = i == 0, onOutputLayer = i == dnaLayers.length - 1;
 		dnaNodes = dnaNodes.splice(1, dnaNodes.length);
 		for (var j = 0; j < dnaNodes.length; j++) {
-			var dnaNode = dnaNodes[j], dnaWeights = dnaNode.split(NEW_WEIGHT), annNode = new HiddenNode(ann, i+1, nil++, SIGMOID),
+			var dnaNode = dnaNodes[j], dnaWeights = dnaNode.split(NEW_WEIGHT), annNode = new HiddenNode(ann, i+1, nil++, ACT_FN),
 				annCurrentLayer = onOutputLayer ? ann.outputs : ann.hiddenLayers[i];
 			if (annCurrentLayer) annCurrentLayer.push(annNode)
 			else {annCurrentLayer = [annNode]; ann.hiddenLayers.push(annCurrentLayer);} // new hidden layer
@@ -162,8 +162,8 @@ GeneticAlgo.prototype.fromGenotype = function(dna) {
 				if (w.charAt(0) == IS_BIAS) doBiases.push({node:annNode,wgt:parseFloat(w.slice(1, w.length))});
 				else { // not bias
 					var annLeftLayer = getLeftLayer(ann, i), annLeftNode = annLeftLayer[rn];
-					if (!annLeftNode) annLeftLayer[rn] = annLeftNode = (onFirstHiddenLayer ? createInputNode(ann, 0, nil++, SIGMOID)
-						: new HiddenNode(ann, i, nil++, SIGMOID));
+					if (!annLeftNode) annLeftLayer[rn] = annLeftNode = (onFirstHiddenLayer ? createInputNode(ann, 0, nil++, ACT_FN)
+						: new HiddenNode(ann, i, nil++, ACT_FN));
 					getOrCreateConnection(annLeftNode, annNode, parseFloat(w));
 					rn++;
 				}
@@ -171,7 +171,7 @@ GeneticAlgo.prototype.fromGenotype = function(dna) {
 		}
 		annLeftLayer = ann.hiddenLayers[i]; 
 	}
-	if (doBiases.length) ann.bias = createInputNode(ann, -1, -1, SIGMOID, true);
+	if (doBiases.length) ann.bias = createInputNode(ann, -1, -1, ACT_FN, true);
 	for (var i = 0; i < doBiases.length; i++) {
 		var bias = doBiases[i];
 		bias.node.giveBias(ann.bias, bias.wgt);

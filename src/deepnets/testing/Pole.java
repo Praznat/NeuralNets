@@ -44,7 +44,8 @@ public class Pole extends Applet implements Runnable {
 	static final int NUM_BUCKETS = 8;
 	static EnvTranslator stateTranslator = EnvTranslator.rbfEnvTranslator(stateMins,
 			stateMaxes, new int[] {NUM_BUCKETS,NUM_BUCKETS}, .5);
-	final int learnFrame = 1000;
+	int learnFrame = 1000;
+	final int learnFrameInc = 1000;
 	final ModelLearnerHeavy modeler = new ModelLearnerHeavy(100, new int[] {NUM_BUCKETS*2},
 			new int[] {NUM_BUCKETS*2*2}, new int[] {NUM_BUCKETS*2}, ActivationFunction.SIGMOID0p5, learnFrame);
 	int frame = 0;
@@ -206,12 +207,16 @@ public class Pole extends Applet implements Runnable {
 	}
 	
 	private boolean isSmart() {
-		return frame > learnFrame;
+		final double err = modeler.getTransitionsModule().getConfidenceEstimate();
+				final int learnFrame = 1000;
+		if (err > 0 && err < 0.001) return frame > learnFrame;
+		else return false;
 	}
 	private void lose() {
-		if (frame > learnFrame && lastLoss < learnFrame) { // learn frame was between last loss and this
+		if (frame >= learnFrame && lastLoss < learnFrame) { // learn frame was between last loss and this
 			modeler.learnFromMemory(1.5, 0.5, 0, false, 500, learnFrame, smartThresh);
 			System.out.println("achieved confidence of " + modeler.getModelVTA().getConfidenceEstimate());
+			learnFrame += learnFrameInc;
 		}
 		initVars();
 		lastWasLoss = true;
@@ -219,10 +224,10 @@ public class Pole extends Applet implements Runnable {
 		double vtaConf = modeler.getModelVTA().getConfidenceEstimate();
 		System.out.println((thisLoss - lastLoss) + "	" + vtaConf + "	" + (isSmart()?"*":""));
 		lastLoss = thisLoss;
-		if (isSmart()) {
-			for (double[] dd : tmpCorrel) System.out.println(dd[0] + "	" + dd[1]);
-			modeler.testit(1000, stateMins, stateMaxes, stateTranslator, actionTranslator, actionChoices, false);
-		}
+//		if (isSmart()) {
+//			for (double[] dd : tmpCorrel) System.out.println(dd[0] + "	" + dd[1]);
+//			modeler.testit(1000, stateMins, stateMaxes, stateTranslator, actionTranslator, actionChoices, false);
+//		}
 	}
 
 	public void run() {

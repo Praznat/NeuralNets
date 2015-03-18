@@ -37,7 +37,7 @@ public class Foresight {
 				double[] newStateVars = new double[stateVars.length];
 				for (Node n : outputs) newStateVars[j++] = n.getActivation();
 				double[] allVars = ModelLearnerHeavy.concatVars(stateVars, actionVars, newStateVars);
-				newStateVars = modeler.upJointOutput(allVars, allVars.length - newStateVars.length, jointAdjustments);
+				if (jointAdjustments > 0) newStateVars = modeler.upJointOutput(allVars, allVars.length - newStateVars.length, jointAdjustments);
 //				newStateVars = modeler.upFamiliarity(allVars, newStateVars.length, jointAdjustments,
 //						jointAdjustments, 2.5, .5, 0, 0.1); // <- hacky!
 				realism = 1; //modeler.getFamiliarity(allVars); // assumes same action held

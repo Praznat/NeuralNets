@@ -13,8 +13,8 @@ public class Connection {
 
 	public static <N extends Node> Connection quickCreate(N inputNode, N outputNode, AccruingWeight weight) {
 		Connection conn = new Connection((Node) inputNode, (Node) outputNode, weight);
-		inputNode.getOutputConnections().add(conn);
-		outputNode.getInputConnections().add(conn);
+		inputNode.getRawOutputConnections().add(conn);
+		outputNode.getRawInputConnections().add(conn);
 		return conn;
 	}
 	public static <N extends Node> Connection getOrCreate(N inputNode, N outputNode) {
@@ -22,7 +22,7 @@ public class Connection {
 	}
 	public static <N extends Node> Connection getOrCreate(N inputNode, N outputNode, AccruingWeight weight) {
 		Connection conn = null;
-		for (Connection outputConn : inputNode.getOutputConnections()) {
+		for (Connection outputConn : inputNode.getRawOutputConnections()) {
 			if (outputConn.getOutputNode() == outputNode) {
 				conn = outputConn;
 				break;
@@ -30,7 +30,7 @@ public class Connection {
 		}
 		if (conn != null) { // just check input-output = output-input
 			boolean isOK = false;
-			for (Connection inputConn : outputNode.getInputConnections()) {
+			for (Connection inputConn : outputNode.getRawInputConnections()) {
 				if (inputConn.getInputNode() == inputNode && inputConn == conn) isOK = true;
 			}
 			if (!isOK) System.out.println("CRITICAL ERROR: input-output != output-input");

@@ -45,7 +45,10 @@ public class ModelLearnerHeavy extends ModelLearner {
 				lastMs = System.currentTimeMillis();
 			}
 		}
-		if (debug) ms = debugTime("Learning VTA took ", ms);
+		if (debug) {
+			ms = debugTime("Learning VTA took ", ms);
+			System.out.println("VTA err:	" + getModelVTA().getConfidenceEstimate());
+		}
 		lastMs = ms;
 		for (int i = 0; i < iterations; i++) {
 			for (TransitionMemory m : memories) getModelJDM().analyzeTransition(m, lRate, mRate, sRate);
@@ -55,7 +58,10 @@ public class ModelLearnerHeavy extends ModelLearner {
 				lastMs = System.currentTimeMillis();
 			}
 		}
-		if (debug) ms = debugTime("Learning JDM took ", ms);
+		if (debug) {
+			ms = debugTime("Learning JDM took ", ms);
+			System.out.println("JDM err:	" + getModelJDM().getConfidenceEstimate());
+		}
 //		for (int i = 0; i < iterations; i++) {
 //			for (TransitionMemory m : memories) getModelTFA().analyzeTransition(m, lRate, mRate, sRate);
 //			if (stopAtErrThreshold > 0 && getModelTFA().getConfidenceEstimate() < stopAtErrThreshold) break;
@@ -77,13 +83,24 @@ public class ModelLearnerHeavy extends ModelLearner {
 
 	@Override
 	public double[] upJointOutput(double[] vars, int postStateIndex, int rounds) {
-		vars = Foresight.probabilisticRoundingUnnormalized(vars); // adds noise
+		if (rounds <= 0) throw new IllegalStateException("cant do non-positive rounds");
+		double[] newvars = Foresight.probabilisticRoundingUnnormalized(vars); // adds noise
 		Collection<? extends Node> inputNodes = modelJDM.getNeuralNetwork().getInputNodes();
 		Collection<? extends Node> outputNodes = modelJDM.getNeuralNetwork().getOutputNodes();
+		double lastDiff = 1;
 		for (int i = 0; i < rounds; i++) {
-			FFNeuralNetwork.feedForward(inputNodes, vars);
+			FFNeuralNetwork.feedForward(inputNodes, i == 0 ? newvars : vars);
 			int j = postStateIndex;
-			for (Node n : outputNodes) vars[j++] = n.getActivation();
+			double sumdiff = 0;
+			for (Node n : outputNodes) {
+				final double a = n.getActivation();
+				final double diff = a - vars[j];
+				sumdiff += diff * diff;
+				vars[j++] = a;
+			}
+			final double currDiff = Math.sqrt(sumdiff / outputNodes.size());
+			if (lastDiff - currDiff < 0.01) break; // TODO should be about currDiff - lastDiff
+			lastDiff = currDiff;
 		}
 		double[] result = new double[vars.length - postStateIndex];
 		System.arraycopy(vars, postStateIndex, result, 0, result.length);

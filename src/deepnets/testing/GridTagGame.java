@@ -77,7 +77,7 @@ public class GridTagGame extends GridGame {
 	}
 	protected static void test2() {
 		int size = 5;
-		int turns = size * size * 50;
+		int turns = size * 4 * 100;
 		Planner explorer = Planner.createRandomChimp();
 		ModelLearnerHeavy modeler = new ModelLearnerHeavy(500, new int[] {size * size * 2},
 				new int[] {}, new int[] {}, ActivationFunction.SIGMOID0p5, turns);
@@ -96,11 +96,11 @@ public class GridTagGame extends GridGame {
 			modeler.observePostState(game.getState());
 			modeler.saveMemory();
 		}
-		modeler.learnFromMemory(1.5, 0.5, 0, false, 100);
+		modeler.learnFromMemory(1.5, 0.5, 0, false, 100, 10000);
 		// up to now should be same as test1 (except walls)
 		game.setPlayerPos(size-1, size-1);
 		game.setOpponentPos(0, 0);
-		int numPlanSteps = 3;
+		int numPlanSteps = 5;
 		int numPlanRuns = 25;
 		Planner follower = Planner.createMonteCarloPlanner(modeler, numPlanSteps, numPlanRuns, game.follow);
 		Planner evader = Planner.createMonteCarloPlanner(modeler, numPlanSteps, numPlanRuns, game.evade);

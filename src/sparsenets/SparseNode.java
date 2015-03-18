@@ -20,8 +20,8 @@ public class SparseNode extends Node {
 			String nodeInLayer, int numUsedConnections) {
 		super(activationFunction, parentLayer, nodeInLayer);
 		this.numUsedConnections = numUsedConnections;
-		inputConnections = new TreeSet<Connection>();
-		outputConnections = new TreeSet<Connection>();
+		inputConnections = new TreeSet<Connection>(CONN_COMP);
+		outputConnections = new TreeSet<Connection>(CONN_COMP);
 	}
 	
 	private Collection<Connection> getMaxConnections(Collection<Connection> conns) {
@@ -34,13 +34,16 @@ public class SparseNode extends Node {
 		return result;
 	}
 	
+	/** sparse connections */
 	@Override
 	public Collection<Connection> getInputConnections() {
 		Collection<Connection> result = getMaxConnections(inputConnections);
-		result.add(BiasNode.getBiasConnection(this));
+		Connection biasConnection = BiasNode.getBiasConnection(this);
+		if (biasConnection != null) result.add(BiasNode.getBiasConnection(this));
 		return result;
 	}
 
+	/** sparse connections */
 	@Override
 	public Collection<Connection> getOutputConnections() {
 		return getMaxConnections(outputConnections);
