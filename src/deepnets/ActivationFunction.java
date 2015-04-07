@@ -1,6 +1,9 @@
 package deepnets;
 
-public interface ActivationFunction {
+import java.io.Serializable;
+
+@SuppressWarnings("serial")
+public interface ActivationFunction extends Serializable {
 	
 	public double feed(double input);
 	public double backfeed(double input);
@@ -84,7 +87,7 @@ public interface ActivationFunction {
 		}
 		@Override
 		public double derivative(double activation) {
-			return activation;
+			return 1;
 		}
 		@Override
 		public double backfeed(double output) {

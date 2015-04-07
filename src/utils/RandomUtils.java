@@ -1,6 +1,8 @@
 package utils;
 
-import java.util.List;
+import java.util.*;
+
+import deepnets.*;
 
 public class RandomUtils {
 
@@ -24,6 +26,11 @@ public class RandomUtils {
 		System.arraycopy(d1, 0, result, 0, d1.length);
 		System.arraycopy(d2, 0, result, d1.length, d2.length);
 		return result;
+	}
+	
+	public static void randomizeWeights(FFNeuralNetwork ann) {
+		Collection<Connection> conns = Connection.getAllConnections(ann);
+		for (Connection conn : conns) conn.getWeight().setWeight(DefaultParameters.RANDOM_WEIGHT());
 	}
 	
 }

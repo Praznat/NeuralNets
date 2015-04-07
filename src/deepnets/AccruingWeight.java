@@ -1,8 +1,9 @@
 package deepnets;
 
+@SuppressWarnings("serial")
 public class AccruingWeight implements Weight {
 	
-	private double weight, newWeight, lastWgtChg, blameFromOutput;
+	private double weight, newWeight, lastWgtChg, blameFromOutput, cumSqrChg;
 	private boolean frozen = false;
 
 	public AccruingWeight() {
@@ -40,6 +41,7 @@ public class AccruingWeight implements Weight {
 		this.blameFromOutput = delta * weight;
 		double change = learningRate * delta * inputActivation + momentum * this.lastWgtChg;
 		if (!isFrozen) chgWeight(change);
+		this.cumSqrChg += inputActivation;// * (1 - delta * delta);///(change*change+1);
 		this.lastWgtChg = change;
 	}
 
@@ -49,5 +51,8 @@ public class AccruingWeight implements Weight {
 
 	public void unFrieze() {
 		this.frozen = false;
+	}
+	public double getCumSqrChg() {
+		return cumSqrChg;
 	}
 }

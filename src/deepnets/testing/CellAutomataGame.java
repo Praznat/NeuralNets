@@ -46,7 +46,8 @@ public class CellAutomataGame extends GridGame {
 		}
 	}
 
-	void oneStep() {
+	@Override
+	public void oneTurn() {
 		for (int c = 0; c < cols; c++) for (int r = 0; r < rows; r++) {
 			nextState[c][r] = GAME_OF_LIFE.turnOn(r, c, grid);
 		}
@@ -112,7 +113,7 @@ public class CellAutomataGame extends GridGame {
 			if (reInit) game.initialize(pOn);
 			long startMs = System.currentTimeMillis();
 			if (modeler != null) modeler.observePreState(game.getState());
-			game.oneStep();
+			game.oneTurn();
 			if (modeler != null) {
 				double[] postState = game.getState();
 				modeler.observePostState(postState);
@@ -155,7 +156,7 @@ public class CellAutomataGame extends GridGame {
 			double[] guessState = Foresight.getBestPredictedNextState(modeler, state, numRuns, jointAdjustments);
 			double[][] grid = game.getGridFromState(guessState);
 			GridGame.print(grid);
-			game.oneStep(); // for comparing error
+			game.oneTurn(); // for comparing error
 			System.out.println("% CORRECT:	" + GridGame.pctCorrect(game.grid, grid, true) + "	" + GridGame.pctCorrect(game.grid, grid, false));
 			game.setGrid(grid);
 			try {
@@ -182,7 +183,6 @@ public class CellAutomataGame extends GridGame {
 			}
 		}
 	}
-
 }
 
 

@@ -17,12 +17,15 @@ public class BiasNode {
 	}
 
 	public static void connectToNode(Node node) {
-		Connection conn = Connection.getOrCreate(INSTANCE, node);
-		toNodesMap.put(node, conn);
+		connectToNode(node, null);
 	}
 	public static void connectToNode(Node node, AccruingWeight weight) {
-		Connection conn = Connection.getOrCreate(INSTANCE, node, weight);
+		Connection conn = weight == null ? Connection.getOrCreate(INSTANCE, node)
+				: Connection.getOrCreate(INSTANCE, node, weight);
 		toNodesMap.put(node, conn);
+		if (toNodesMap.size() > 500) {
+			System.out.println("MEMORY LEAK WARNING! Clear biases please!");
+		}
 	}
 	
 	public static void clearConnections() {

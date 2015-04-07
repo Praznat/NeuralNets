@@ -12,19 +12,20 @@ import deepnets.*;
 public class BasicTests {
 
 	public static void main(String[] args) {
-		xor();
 		bayesian();
+		xor();
 		modelingContinuous();
-		fakePole();
-		modeling();
-		envtranslator();
 		transitionApproximator();
+		testKWIK();
+		modeling();
+		fakePole();
+		envtranslator();
 	}
 
 	private static void xor() {
 		System.out.println("XOR");
 		Layer<Node> inputLayer = Layer.createInputLayer(2, Node.BASIC_NODE_FACTORY);
-		Layer<Node> hiddenLayer = Layer.createHiddenFromInputLayer(inputLayer, 2,
+		Layer<Node> hiddenLayer = Layer.createHiddenFromInputLayer(inputLayer, 4,
 				ActivationFunction.SUPERSIGMOID, Node.BASIC_NODE_FACTORY);
 		BiasNode.connectToLayer(hiddenLayer);
 		Layer<Node> outputLayer = Layer.createHiddenFromInputLayer(hiddenLayer, 1,
@@ -44,8 +45,8 @@ public class BasicTests {
 		Collection<DataPoint> data = DataPoint.createData(inputSamples, outputSamples);
 		System.out.println("E: " + FFNeuralNetwork.stdError(inputLayer.getNodes(), outputLayer.getNodes(), data));
 		
-		ControlPanel.learnFromBackPropagation(inputLayer.getNodes(), outputLayer.getNodes(), data, 10000,
-				2, 0.8, 0.5, 0.3, 0.05, 0.01);
+		ControlPanel.learnFromBackPropagation(inputLayer.getNodes(), outputLayer.getNodes(), data, 1000,
+				0.9, 0.8, 0, 0.7, 0.3, 0);
 
 		System.out.println("Trained");
 		for (double[] is : inputSamples) {
@@ -86,12 +87,12 @@ public class BasicTests {
 		modeler.learnFromMemory(1.5,0.5,0, false, 1000);
 		modeler.getTransitionsModule().getNeuralNetwork().report(data);
 		
-		double[] foresight = Foresight.montecarlo(modeler, new double[] {0,0,1,0,0}, null, 1, 10000, 10, 0.1);
+		double[] foresight = Foresight.montecarlo(modeler, new double[] {0,0,1,0,0}, null, null, 1, 10000, 10, 0.1);
 		for (double d : foresight) System.out.print(d + "	");
 		System.out.println(near(foresight[0],0) && near(foresight[1],0.5) && near(foresight[2],0)
 				&& near(foresight[3],0.5) && near(foresight[4],0)
 				? "montecarlo 1 ok" : "montecarlo 1 sucks");
-		foresight = Foresight.montecarlo(modeler, new double[] {0,0,1,0,0}, null, 2, 10000, 10, 0.1);
+		foresight = Foresight.montecarlo(modeler, new double[] {0,0,1,0,0}, null, null, 2, 10000, 10, 0.1);
 		for (double d : foresight) System.out.print(d + "	");
 		System.out.println(near(foresight[0],0.5) && near(foresight[1],0) && near(foresight[2],0.25)
 				&& near(foresight[3],0) && near(foresight[4],0)
@@ -135,7 +136,65 @@ public class BasicTests {
 		modeler.learnFromMemory(2, 0.5, 0, false, 1000);
 		modeler.getModelVTA().getNeuralNetwork().report(data);
 	}
+	
+	// TODO test case where it gets so good at predicting that no more error propagates
+	// that results in no additions to cumSqrChg
+	// you need to penalize these states by adding uniformly to cumSqrChg on active inputs when output error is low
+	private static void testKWIK() {
+		int turns = 100;
+		double[] winRate = {0,0,0,0};
+		for (int i = 0; i < turns; i++) {
+			double[] wins = testKWIKOnce();
+			for (int j = 0; j < wins.length; j++) winRate[j] += wins[j];
+		}
+		for (int j = 0; j < winRate.length; j++) winRate[j] /= turns;
+		System.out.println(Utils.stringArray(winRate, 4));
+	}
+	private static double[] testKWIKOnce() {
+		ModelLearnerHeavy modeler = new ModelLearnerHeavy(500, new int[] {15}, 
+				new int[] {15}, new int[] {15}, ActivationFunction.SIGMOID0p5, 50);
+		double[][] inputSamples = {{0,0,1,0},{0,1,0,0},{1,0,0,0}};
+		double[][] outputSamples = {{0,0,0,1},{0,0,1,0},{0,1,0,0}};
+		Collection<DataPoint> data = DataPoint.createData(inputSamples, outputSamples);
 
+		int iterations = 50;
+		for (int i = 0; i < iterations; i++) {
+			for (DataPoint dp : data) {
+				modeler.observePreState(dp.getInput());
+				modeler.observePostState(dp.getOutput());
+				modeler.learnOnline(1.5, 0.5, 0);
+			}
+		}
+		data.add(new DataPoint(new double[] {0,0,0,1}, new double[] {1,0,0,0}));
+		FFNeuralNetwork vta = modeler.getModelVTA().getNeuralNetwork();
+		FFNeuralNetwork jdm = modeler.getModelJDM().getNeuralNetwork();
+		Node familiode = jdm.getOutputNodes().get(jdm.getOutputNodes().size()-1);
+//		vta.report(data);
+		double p0 = 9999, p1 = 9999, p2 = 9999, p3 = 9999;
+		double[] bests = {9999,9999,9999,9999};
+		double[] wins = {0, 0, 0, 0};
+		for (DataPoint dp : data) {
+			FFNeuralNetwork.feedForward(vta.getInputNodes(), dp.getInput());
+			FFNeuralNetwork.feedForward(jdm.getInputNodes(), dp.getInput());
+			double[] outputs = Utils.getActivations(vta.getOutputNodes());
+			p0 = Foresight.estimateCertainty(outputs);
+			p1 = familiode.getActivation();
+			p2 = Foresight.estimateWeightCertainty(vta.getInputNodes(), false);
+			p3 = Foresight.estimateWeightCertainty(vta.getInputNodes(), true);
+			if (p0 < bests[0]) bests[0] = p0;
+			if (p1 < bests[1]) bests[1] = p1;
+			if (p2 < bests[2]) bests[2] = p2;
+			if (p3 < bests[3]) bests[3] = p3;
+//			System.out.println(Utils.stringArray(dp.getInput(), 0) + "	" + Utils.stringArray(outputs, 4)
+//					+ "	:" + p0 + "	:" + p1 + "	:" + p2 + "	:" + p3);
+		}
+		if (p0 == bests[0]) wins[0]++;
+		if (p1 == bests[1]) wins[1]++;
+		if (p2 == bests[2]) wins[2]++;
+		if (p3 == bests[3]) wins[3]++;
+		BiasNode.clearConnections();
+		return wins;
+	}
 	
 	private static void fakePole() {
 		//TODO pls try to get this working with more buckets
@@ -189,7 +248,7 @@ public class BasicTests {
 			String s = "";
 			for (double d : state) s += d + "	";
 			for (double[] act : actions) {
-				double[] foresight = Foresight.montecarlo(modeler, stateTranslator.toNN(state), act, 1, 100, 30, 0);
+				double[] foresight = Foresight.montecarlo(modeler, stateTranslator.toNN(state), act, 1, 100, 30);
 				double[] postV = stateTranslator.fromNN(foresight);
 				s += "act:" + actTranslator.fromNN(act) + ":	";
 				for (double d : postV) s += Utils.round(d * 100, 2) + "	";
@@ -215,7 +274,7 @@ public class BasicTests {
 		modeler.learnFromMemory(2, 0.5, 0, false, 1000);
 		modeler.getModelVTA().getNeuralNetwork().report(data);
 		for (int i = 0; i < inputSamples.length; i++) {
-			double[] foresight = Foresight.montecarlo(modeler, inputSamples[i], null, 1, 10000, 10, 0.1);
+			double[] foresight = Foresight.montecarlo(modeler, inputSamples[i], null, null, 1, 10000, 10, 0.1);
 			for (double d : foresight) System.out.print(d + "	");
 			System.out.println();
 		}
@@ -248,14 +307,20 @@ public class BasicTests {
 //		double[] newFamiliar2 = modeler2.upFamiliarity(tm, jointRounds, jointRounds, 1.5, .5, 0, 0.1);
 //		System.out.println(newFamiliar1[0] + "," + newFamiliar1[1] + "	vs	" + newFamiliar2[0] + "," + newFamiliar2[1]);
 	
-		for (int i = 0; i < 8; i++) {
+		double[] z1 = new double[4]; double[] z2 = new double[4];
+		int n = 500;
+		for (int i = 0; i < n; i++) {
 			double[] newJoint1 = modeler1.upJointOutput(tm, jointRounds);
 			double[] newJoint2 = modeler2.upJointOutput(tm, jointRounds);
-			System.out.println(Math.round(newJoint1[0]) + "," + Math.round(newJoint1[1])
-					+ "	vs	" + Math.round(newJoint2[0]) + "," + Math.round(newJoint2[1]));
+//			System.out.println(Math.round(newJoint1[0]) + "," + Math.round(newJoint1[1])
+//					+ "	vs	" + Math.round(newJoint2[0]) + "," + Math.round(newJoint2[1]));
+			z1[(int)(Math.round(newJoint1[0])*2+Math.round(newJoint1[1]))]++;
+			z2[(int)(Math.round(newJoint2[0])*2+Math.round(newJoint2[1]))]++;
 		}
-		System.out.println("Above left column should be mostly 0,0 sometimes 1,1. right column should "
-				+ "be mostly 1,0 sometimes 0,1");
+		System.out.println("	[0,0]	[0,1]	[1,0]	[1,1]");
+		System.out.println("+CORR:	"+z1[0]/n+"	"+z1[1]/n+"	"+z1[2]/n+"	"+z1[3]/n);
+		System.out.println("-CORR:	"+z2[0]/n+"	"+z2[1]/n+"	"+z2[2]/n+"	"+z2[3]/n);
+		System.out.println("+CORR should be 1/3 1,1 and 2/3 0,0. -CORR should be 1/3 1,0 and 2/3 0,1");
 	}
 	
 	private static ModelLearnerHeavy learnModelFromData(DataPoint[] data, int epochs) {

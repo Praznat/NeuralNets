@@ -1,6 +1,6 @@
 package reasoner;
 
-public class MultiRewardAssessment {
+public class MultiRewardAssessment implements StateObserver {
 
 	private final RewardFunction rewardFn;
 	private final double discountRate;
@@ -12,7 +12,8 @@ public class MultiRewardAssessment {
 		this.discountRate = discountRate;
 	}
 	
-	public void observeState(int t, double[] state, double realism) {
+	@Override
+	public void observeState(int t, double realism, double... state) {
 		sumReward += discount(rewardFn.getReward(state), t) * realism;
 		sumRealism += realism;
 	}

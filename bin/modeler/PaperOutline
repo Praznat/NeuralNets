@@ -57,7 +57,21 @@ This step can be repeated multiple times for better results. The IRM is trained 
 At each transition, the inputs to the IRM are all variables X, A, and X', and the target output is X'.
 Thus, the IRM approximates X' given an initial guess of X' using learned correlations between variables.
 
-Environments with Continuous Variables
+
+Qualities of NFSTM
+1. Supervised learning that uses backpropagation (ProbabilityTracking, BasicTests +-CORR)
+2. Integrates with logical planner (DecisionProcess)
+3. Relatively low complexity (Comparison with tables)
+4. Learns stochastic environments (Geysers)
+5. Separates reward module (GridTagGame, Collector)
+	a. Object modularization (GridTagGame?)
+6. Transfer learning (AxisTransfer)
+7. Abduction (Backward vs forward reasoning)
+8. Biology (That paper)
+9. Learning instincts (Model -> policy)
+
+caveats: when to stop training, how good is "good" error, when are there not enough training samples,
+when the neural net architecture is appropriate or not, etc
 
 "chainprocessing":
 Experience/observations -> model learner -> planner -> actions
@@ -67,10 +81,15 @@ weight-decay and symbolization
 redundancy -> transfer
 find several similar subnetworks throughout net that can be replaced by rerouting through single subnetwork
 symbolismo
+transferability measure : bisimulation metric
 
 domains		truth-teller / liar games
 			maze (always centered on agent; goal is just move down)
 			asterisk (atari)
+
+Why Model-based RL
+Q-learning not PAC-MDP, model-based can be PAC-MDP (Littman)
+Separate reward logic, modularity
 
 Why Neural Networks?
 Even without traversing the entire state space, a neural network may capture patterns that allow an agent
@@ -88,28 +107,37 @@ Learning reward function is separate problem
 i forget how the world works)
 
 Why separate planning?
+Modularity
 
 Why not policy based?
 Faster (supervised learning)
 
-Why generative rather than discriminative model?
-Imagination. Monte Carlo simulation.
 
+neuro-symbolic
+1. connectionist model-learner + symbolic planning
+2. neural net abduction
+3. symbolic environment description and comparison
+
+
+interesting directions
+
+POMDP might not know what state you are in but estimate from past states and actions!
+
+Explicitly separating independent rules (player movement vs enemy movement)
+modularization -> discretization
+"Objects with attributes rather than states with features" (Littman)
+a.k.a. automatic object-orientation
+
+learning specialist: feed chosen optimal actions to output target given state as input (policy-based)
 
 About learning hidden state variables
 
 cellular automata -> HyperNEAT can reuse patterns!
 
+Environments with Continuous Variables?
 
-generative vs discriminative
-imagine 2 ways the power to see the future might work
-1. you see what is going to happen (you immediately imagine the most likely scenario)
-2. your power is to tell whether a scenario is going to happen, given an imagined scenario,
-but your power is not to immediately imagine the most likely one.
-
-Familiarity module is like having option 2 (ability to evaluate scenario)
-VTA is like having a shitty option 1 (ability to imagine likely scenario)
-IRM is like being able to move your shitty result from VTA towards more likely scenario
+instinct	-	habit	-	reason
+policy		-	value	-	model
 
 novelty search should reduce exploration time
 throwing out similar samples during training should speed up training

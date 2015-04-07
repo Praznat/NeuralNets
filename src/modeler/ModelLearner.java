@@ -1,11 +1,16 @@
 package modeler;
 
-import deepnets.ExperienceReplay;
+import java.util.ArrayList;
+
+import deepnets.*;
 
 public abstract class ModelLearner {
 
 	protected double[] workingPreState, workingAction, workingPostState;
 	protected final ExperienceReplay<TransitionMemory> experienceReplay;
+	
+	protected boolean isRecordingTraining;
+	protected ArrayList<Double> trainingErrorLog = new ArrayList<Double>();
 	
 	public ModelLearner(int expReplaySize) {
 		this.experienceReplay = expReplaySize > 0 ? new ExperienceReplay<TransitionMemory>(expReplaySize) : null;
@@ -25,15 +30,27 @@ public abstract class ModelLearner {
 		return new TransitionMemory(workingPreState, workingAction, workingPostState);
 	}
 	
-	public void saveMemory() {
+	public TransitionMemory saveMemory() {
 		if (experienceReplay == null) throw new IllegalStateException("must define experience replay size");
-		experienceReplay.addMemory(createMemory());
+		TransitionMemory tm = createMemory();
+		experienceReplay.addMemory(tm);
+		clearWorkingMemory();
+		return tm;
+	}
+	
+	public void clearWorkingMemory() {
 		workingPreState = null;
 		workingAction = null;
 		workingPostState = null; // to create exception if you try to save memory without reobserving
 	}
 	
+	public void clearExperience() {
+		experienceReplay.clear();
+	}
+	
 	// TODO learn online
+	public abstract void learnOnline(double lRate, double mRate, double sRate);
+	
 	public void learnFromMemory(double lRate, double mRate, double sRate,
 			boolean resample, int iterations) {
 		learnFromMemory(lRate, mRate, sRate, resample, iterations, 0, 0);
@@ -61,6 +78,32 @@ public abstract class ModelLearner {
 	public abstract double[] upJointOutput(double[] vars, int postStateIndex, int rounds);
 
 	public abstract ModelerModule getTransitionsModule();
+	public abstract ModelerModule getFamiliarityModule();
+	
+	public void recordTraining() {
+		this.isRecordingTraining = true;
+	}
+	
+	public ArrayList<Double> getTrainingLog() {
+		return trainingErrorLog;
+	}
+	
+	public double getPctMastered() {
+		double sum = 0;
+		ModelerModule vta = getTransitionsModule();
+		allmemo:
+		for (TransitionMemory tm : experienceReplay.getBatch(false)) {
+			observeAction(tm.action);
+			observePreState(tm.preStateVars);
+			feedForward();
+			int i = 0;
+			for (Node n : vta.getNeuralNetwork().getOutputNodes()) {
+				if (Math.round(n.getActivation()) != Math.round(tm.postStateVars[i++])) continue allmemo;
+			}
+			sum++;
+		}
+		return sum / experienceReplay.getSize();
+	}
 
 //	public abstract double getFamiliarity(double[] allVars);
 //	public abstract double[] upFamiliarity(double[] allVars, int postLen, int jointAdjustments, int epochs,

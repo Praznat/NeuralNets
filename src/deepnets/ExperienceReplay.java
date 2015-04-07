@@ -6,8 +6,12 @@ public class ExperienceReplay<T extends ExperienceReplay.Memory> {
 
 	private final ArrayList<T> dataMemory = new ArrayList<T>();
 	private final int maxSize;
-	
+
 	public ExperienceReplay(int maxSize) {
+		this(maxSize, false);
+	}
+	// TODO overwrite duplicate experiences!
+	public ExperienceReplay(int maxSize, boolean overwriteCopies) {
 		this.maxSize = maxSize;
 	}
 	
@@ -36,7 +40,18 @@ public class ExperienceReplay<T extends ExperienceReplay.Memory> {
 	public Collection<T> getBatch(boolean resample) {
 		return getBatch(dataMemory.size(), resample);
 	}
+	
+	public boolean isFull() {
+		return dataMemory.size() == maxSize;
+	}
 
 	public static interface Memory {
+	}
+
+	public void clear() {
+		dataMemory.clear();
+	}
+	public double getSize() {
+		return dataMemory.size();
 	}
 }

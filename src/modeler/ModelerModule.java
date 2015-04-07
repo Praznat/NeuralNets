@@ -1,12 +1,15 @@
 package modeler;
 
-import java.util.Collection;
+import java.util.*;
 
 import utils.Decayer;
 import deepnets.*;
 
 public abstract class ModelerModule {
 
+	private static final double NO_ERR_CHG_THRESH = 0.00000001;
+	private static final int STRIKES = 15000000;
+	
 	private double errorEMA = 0;
 	private int emaStep = 100;
 
@@ -29,6 +32,30 @@ public abstract class ModelerModule {
 		if (outShortage > 0) {
 			for (int i = 0; i < outShortage; i++) ann.addNode(ann.getNumLayers()-1, actFn,
 					new AccruingWeight(1.0, false)); // "true" when you want standard output to be zero?
+		}
+	}
+	
+	public void learn(Collection<TransitionMemory> memories, double stopAtErrThreshold,
+			long displayProgressMs, int iterations, double lRate, double mRate, double sRate,
+			boolean isRecordingTraining, ArrayList<Double> trainingErrorLog) {
+		long lastMs = System.currentTimeMillis();
+		double lastErr = 1;
+		int strikesLeft = STRIKES;
+		for (int i = 0; i < iterations; i++) {
+			for (TransitionMemory m : memories) analyzeTransition(m, lRate, mRate, sRate);
+			double err = getConfidenceEstimate();
+			if (stopAtErrThreshold > 0 && err < stopAtErrThreshold) break;
+			if (displayProgressMs > 0 && System.currentTimeMillis() - lastMs >= displayProgressMs) {
+				System.out.println(Utils.round(((double)i)*100 / iterations, 2) + "%"
+						+ "	err:	" + err);
+				lastMs = System.currentTimeMillis();
+			}
+			if (isRecordingTraining) trainingErrorLog.add(err);
+			if (lastErr - err < NO_ERR_CHG_THRESH && strikesLeft-- <= 0) {
+				System.out.println("Not learning anymore");
+				break;
+			}
+			lastErr = err;
 		}
 	}
 	
@@ -68,4 +95,9 @@ public abstract class ModelerModule {
 		for (Node n : nodes) result[i++] = n.getActivation();
 		return result;
 	}
+	
+	public void setANN(FFNeuralNetwork ann) {
+		this.ann = ann;
+	}
+
 }

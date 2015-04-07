@@ -1,14 +1,20 @@
 package deepnets;
 
 import java.awt.image.BufferedImage;
+import java.io.Serializable;
 import java.util.*;
 
 import deepnets.convolution.*;
 
-public class FFNeuralNetwork implements NeuralNetwork {
+@SuppressWarnings("serial")
+public class FFNeuralNetwork implements NeuralNetwork, Serializable {
 	
 	private final LinkedList<Layer<? extends Node>> layers = new LinkedList<Layer<? extends Node>>();
-	private final Node.Factory<? extends Node> nodeFactory;
+	public final Node.Factory<? extends Node> nodeFactory;
+	
+	public FFNeuralNetwork() {
+		this.nodeFactory = Node.BASIC_NODE_FACTORY;
+	}
 	
 	public FFNeuralNetwork(ActivationFunction actFn, int numInputs, int numOutputs,
 			Node.Factory<? extends Node> nodeFactory, int... numHidden) {
@@ -52,9 +58,6 @@ public class FFNeuralNetwork implements NeuralNetwork {
 		return layers.get(layer).getNodes().size();
 	}
 
-	public void addNode(int l, ActivationFunction actFn) {
-		addNode(l, actFn, null);
-	}
 	public void addNode(int l, ActivationFunction actFn, AccruingWeight biasWeight) {
 		Layer<? extends Node> layer = layers.get(l);
 		Node node = getNodeFactory().create(actFn, layer, null);
@@ -68,7 +71,8 @@ public class FFNeuralNetwork implements NeuralNetwork {
 			Layer<? extends Node> prevLayer = layers.get(l - 1);
 			for (Node prev : prevLayer.getNodes()) Connection.getOrCreate(prev, node);
 		}
-		BiasNode.connectToNode(node, biasWeight);
+		// bias null check cuz dont wanna connect input to bias
+		if (biasWeight != null) BiasNode.connectToNode(node, biasWeight);
 	}
 
 	public static double stdError(Collection<? extends Node> inputNodes,
@@ -143,14 +147,6 @@ public class FFNeuralNetwork implements NeuralNetwork {
 		}
 		for (AccruingWeight w : weights) w.enactWeightChange(wgtDecay);
 		if (!nextNodes.isEmpty()) backPropagate(nextNodes, learningRate, momentum, wgtDecay, null);
-	}
-	
-	public static void trainRBM(Collection<? extends Node> nodes, double... clampInputs) {
-		int i = 0;
-		for (Node n : nodes) {
-			if (i >= nodes.size()) break;
-			
-		}
 	}
 	
 	public void report(Collection<DataPoint> data) {

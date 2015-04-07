@@ -1,10 +1,18 @@
 package deepnets;
 
+import java.io.*;
 import java.lang.reflect.Array;
+import java.util.Collection;
 
 
 public class Utils {
 
+	public static String stringArray(double[] ds, int e) {
+		StringBuilder sb = new StringBuilder();
+		for (double d : ds) {sb.append(round(d, e)); sb.append("	");}
+		return sb.toString();
+	}
+	
 	public static double oneOf(double[] ds) {
 		return ds[(int) (Math.random() * ds.length)];
 	}
@@ -84,5 +92,42 @@ public class Utils {
 	@SuppressWarnings("unchecked")
 	public static final <T> T[] createArray(Class<T> clasz, int len) {
 		return (T[])Array.newInstance(clasz, len);
+	}
+	public static double[] getActivations(Collection<? extends Node> nodes) {
+		double[] result = new double[nodes.size()];
+		int i = 0;
+		for (Node n : nodes) result[i++] = n.getActivation();
+		return result;
+	}
+	
+	public static void saveNetworkToFile(String namey, FFNeuralNetwork ann) {
+	      try {
+	         File file = new File("./saveFiles/"+namey);
+	         FileOutputStream fileOut = new FileOutputStream(file);
+	         if (!file.exists()) file.createNewFile();
+	         ObjectOutputStream out = new ObjectOutputStream(fileOut);
+	         out.writeObject(ann);
+	         out.close();
+	         fileOut.close();
+	         System.out.println("Serialized data is saved in " + namey);
+	      } catch(Exception e) {
+	          e.printStackTrace();
+	      }
+	}
+	public static FFNeuralNetwork loadNetworkFromFile(String namey) {
+		try {
+			FileInputStream fileIn = new FileInputStream("./saveFiles/"+namey);
+			ObjectInputStream in = new ObjectInputStream(fileIn);
+			Object result = in.readObject();
+			in.close();
+			fileIn.close();
+			return (FFNeuralNetwork) result;
+		} catch(FileNotFoundException e) {
+			System.out.println("No saved data found");
+			return null;
+		} catch(Exception e) {
+			System.out.println(e);
+			return null;
+		}
 	}
 }

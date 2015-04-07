@@ -1,6 +1,10 @@
 package deepnets;
 
-public class Connection {
+import java.io.Serializable;
+import java.util.*;
+
+@SuppressWarnings("serial")
+public class Connection implements Serializable {
 
 	private final Node inputNode, outputNode;
 	private AccruingWeight weight;
@@ -55,6 +59,14 @@ public class Connection {
 	@Override
 	public String toString() {
 		return "C" + Utils.round(weight.getWeight(), 2);
+	}
+	
+	public static Collection<Connection> getAllConnections(FFNeuralNetwork ann) {
+		Collection<Connection> result = new HashSet<Connection>();
+		for (Layer<? extends Node> layer : ann.getLayers()) {
+			for (Node n : layer.getNodes()) result.addAll(n.getOutputConnections());
+		}
+		return result;
 	}
 	
 }

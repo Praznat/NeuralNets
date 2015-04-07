@@ -7,6 +7,13 @@ public abstract class EnvTranslator {
 	public abstract double[] toNN(double... n);
 
 	public abstract double[] fromNN(double[] d);
+	
+	public static EnvTranslator SAME = new EnvTranslator() {
+		@Override
+		public double[] toNN(double... n) { return n; }
+		@Override
+		public double[] fromNN(double[] d) { return d; }
+	};
 
 	/** runs continuous variables into an array of radial basis functions (RBFs) to represent value 
 	 * as distribution over various RBF centers 

@@ -1,10 +1,12 @@
 package deepnets;
 
+import java.io.Serializable;
 import java.util.*;
 
 import deepnets.Node.Factory;
 
-public class Layer<N extends Node> {
+@SuppressWarnings("serial")
+public class Layer<N extends Node> implements Serializable {
 	private final ArrayList<N> nodes = new ArrayList<N>();
 	
 	public static Layer<Node> create(int n, ActivationFunction actFn, Factory<? extends Node> nodeFactory) {
@@ -16,14 +18,17 @@ public class Layer<N extends Node> {
 		return create(n, ActivationFunction.LINEAR, nodeFactory);
 	}
 
-	public static Layer<Node> createHiddenFromInputLayer(Collection<? extends Node> nodes, int n,
-			ActivationFunction actFn, Node.Factory<? extends Node> nodeFactory) {
-		Layer<Node> result = create(n, actFn, nodeFactory);
-		for (Node inputNode : nodes) {
-			for (Node outputNode : result.getNodes()) {
+	public static void fullyConnect(Collection<? extends Node> inNodes, Collection<? extends Node> outNodes) {
+		for (Node inputNode : inNodes) {
+			for (Node outputNode : outNodes) {
 				Connection.getOrCreate(inputNode, outputNode);
 			}
 		}
+	}
+	public static Layer<Node> createHiddenFromInputLayer(Collection<? extends Node> nodes, int n,
+			ActivationFunction actFn, Node.Factory<? extends Node> nodeFactory) {
+		Layer<Node> result = create(n, actFn, nodeFactory);
+		fullyConnect(nodes, result.getNodes());
 		return result;
 	}
 	public static Layer<Node> createHiddenFromInputLayer(Layer<? extends Node> inputLayer, int n,

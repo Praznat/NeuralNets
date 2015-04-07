@@ -26,7 +26,14 @@ public class ModelLearnerHeavy extends ModelLearner {
 		super(maxReplaySize);
 		modelVTA = new VariableTransitionApproximator(actFn, numHiddenVTA, errorHalfLife);
 //		modelTFA = new TransitionFamiliarityAssessor(actFn, numHiddenTRA, errorHalfLife);
-		modelJDM = new JointDistributionModeler(actFn, numHiddenJDM, errorHalfLife);
+		modelJDM = numHiddenJDM != null ? new JointDistributionModeler(actFn, numHiddenJDM, errorHalfLife) : null;
+	}
+
+	@Override
+	public void learnOnline(double lRate, double mRate, double sRate) {
+		TransitionMemory m = saveMemory();
+		getModelVTA().analyzeTransition(m, lRate, mRate, sRate);
+		if (getModelJDM() != null) getModelJDM().analyzeTransition(m, lRate, mRate, sRate);
 	}
 	
 	@Override
@@ -36,31 +43,19 @@ public class ModelLearnerHeavy extends ModelLearner {
 		boolean debug = true;
 		if (debug) System.out.println("Initiated Learning");
 		long ms = System.currentTimeMillis();
-		long lastMs = ms;
-		for (int i = 0; i < iterations; i++) {
-			for (TransitionMemory m : memories) getModelVTA().analyzeTransition(m, lRate, mRate, sRate);
-			if (stopAtErrThreshold > 0 && getModelVTA().getConfidenceEstimate() < stopAtErrThreshold) break;
-			if (displayProgressMs > 0 && System.currentTimeMillis() - lastMs >= displayProgressMs) {
-				System.out.println(Utils.round(((double)i)*100 / iterations, 2) + "%");
-				lastMs = System.currentTimeMillis();
-			}
-		}
+		getModelVTA().learn(memories, stopAtErrThreshold, displayProgressMs, iterations,
+				lRate, mRate, sRate, debug, trainingErrorLog);
 		if (debug) {
 			ms = debugTime("Learning VTA took ", ms);
 			System.out.println("VTA err:	" + getModelVTA().getConfidenceEstimate());
 		}
-		lastMs = ms;
-		for (int i = 0; i < iterations; i++) {
-			for (TransitionMemory m : memories) getModelJDM().analyzeTransition(m, lRate, mRate, sRate);
-			if (stopAtErrThreshold > 0 && getModelJDM().getConfidenceEstimate() < stopAtErrThreshold) break;
-			if (displayProgressMs > 0 && System.currentTimeMillis() - lastMs >= displayProgressMs) {
-				System.out.println(Utils.round(((double)i)*100 / iterations, 2) + "%");
-				lastMs = System.currentTimeMillis();
+		if (getModelJDM() != null){
+			getModelJDM().learn(memories, stopAtErrThreshold, displayProgressMs, iterations,
+					lRate, mRate, sRate, debug, trainingErrorLog);
+			if (debug) {
+				ms = debugTime("Learning JDM took ", ms);
+				System.out.println("JDM err:	" + getModelJDM().getConfidenceEstimate());
 			}
-		}
-		if (debug) {
-			ms = debugTime("Learning JDM took ", ms);
-			System.out.println("JDM err:	" + getModelJDM().getConfidenceEstimate());
 		}
 //		for (int i = 0; i < iterations; i++) {
 //			for (TransitionMemory m : memories) getModelTFA().analyzeTransition(m, lRate, mRate, sRate);
@@ -83,6 +78,7 @@ public class ModelLearnerHeavy extends ModelLearner {
 
 	@Override
 	public double[] upJointOutput(double[] vars, int postStateIndex, int rounds) {
+		if (modelJDM == null) return vars;
 		if (rounds <= 0) throw new IllegalStateException("cant do non-positive rounds");
 		double[] newvars = Foresight.probabilisticRoundingUnnormalized(vars); // adds noise
 		Collection<? extends Node> inputNodes = modelJDM.getNeuralNetwork().getInputNodes();
@@ -93,12 +89,13 @@ public class ModelLearnerHeavy extends ModelLearner {
 			int j = postStateIndex;
 			double sumdiff = 0;
 			for (Node n : outputNodes) {
+				if (j >= vars.length) break;
 				final double a = n.getActivation();
 				final double diff = a - vars[j];
 				sumdiff += diff * diff;
 				vars[j++] = a;
 			}
-			final double currDiff = Math.sqrt(sumdiff / outputNodes.size());
+			final double currDiff = Math.sqrt(sumdiff / (outputNodes.size() - 1));
 			if (lastDiff - currDiff < 0.01) break; // TODO should be about currDiff - lastDiff
 			lastDiff = currDiff;
 		}
@@ -192,14 +189,6 @@ public class ModelLearnerHeavy extends ModelLearner {
 		}
 	}
 	
-	public static Collection<Connection> getAllConnections(FFNeuralNetwork ann) {
-		Collection<Connection> result = new HashSet<Connection>();
-		for (Layer<? extends Node> layer : ann.getLayers()) {
-			for (Node n : layer.getNodes()) result.addAll(n.getOutputConnections());
-		}
-		return result;
-	}
-	
 	public void testit(int times, double[] mins, double[] maxes,
 			EnvTranslator stateTranslator, EnvTranslator actTranslator, List<double[]> actions) {
 		testit(times, mins, maxes, stateTranslator, actTranslator, actions, false);
@@ -253,7 +242,11 @@ public class ModelLearnerHeavy extends ModelLearner {
 	public VariableTransitionApproximator getModelVTA() {
 		return modelVTA;
 	}
-	
+
+	@Override
+	public ModelerModule getFamiliarityModule() {
+		return getModelJDM();
+	}
 	@Override
 	public ModelerModule getTransitionsModule() {
 		return getModelVTA();

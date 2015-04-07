@@ -1,14 +1,16 @@
 package deepnets;
 
+import java.io.Serializable;
 import java.util.*;
 
-public class Node {
+@SuppressWarnings("serial")
+public class Node implements Serializable {
 	
-	private final ActivationFunction activationFunction;
-	private final Layer<? extends Node> parentLayer;
-	private String nodeInLayer;
-	private Double preactivation;
-	private double activation;
+	protected final Layer<? extends Node> parentLayer;
+	protected ActivationFunction activationFunction;
+	protected String nodeInLayer;
+	protected Double preactivation;
+	protected double activation;
 	protected Collection<Connection> inputConnections;
 	protected Collection<Connection> outputConnections;
 	
@@ -75,7 +77,7 @@ public class Node {
 		this.nodeInLayer = name;
 	}
 
-	public interface Factory<N extends Node> {
+	public interface Factory<N extends Node> extends Serializable {
 		public N create(ActivationFunction activationFunction, Layer<? extends Node> parentLayer, String nodeInLayer);
 	}
 	
@@ -86,4 +88,8 @@ public class Node {
 			return new Node(activationFunction, parentLayer, nodeInLayer);
 		}
 	};
+
+	public void setActivationFunction(ActivationFunction actFn) {
+		this.activationFunction = actFn;
+	}
 }

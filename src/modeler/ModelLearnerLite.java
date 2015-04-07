@@ -23,6 +23,12 @@ public class ModelLearnerLite extends ModelLearner {
 	}
 	
 	@Override
+	public void learnOnline(double lRate, double mRate, double sRate) {
+		TransitionMemory m = saveMemory();
+		getModelJCM().analyzeTransition(m, lRate, mRate, sRate);
+	}
+	
+	@Override
 	public void learnFromMemory(double lRate, double mRate, double sRate,
 			boolean resample, int iterations, long displayProgressMs, double stopAtErrThreshold) {
 		Collection<TransitionMemory> memories = experienceReplay.getBatch(resample);
@@ -68,6 +74,10 @@ public class ModelLearnerLite extends ModelLearner {
 		return modelJCM;
 	}
 	
+	@Override
+	public ModelerModule getFamiliarityModule() {
+		return getModelJCM();
+	}
 	@Override
 	public ModelerModule getTransitionsModule() {
 		return getModelJCM();

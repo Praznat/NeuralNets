@@ -1,10 +1,14 @@
 package deepnets.testing;
 
 import java.awt.*;
+import java.util.List;
 
 import javax.swing.*;
 
-import deepnets.Utils;
+import modeler.*;
+import reasoner.Planner;
+
+import deepnets.*;
 
 public abstract class GridGame {
 	protected static JFrame frame = new JFrame();
@@ -19,6 +23,7 @@ public abstract class GridGame {
 		frame.pack();
 	}
 	protected final int rows, cols;
+	double[] chosenAction;
 	public GridGame(int rows, int cols) {
 		this.rows = rows;
 		this.cols = cols;
@@ -57,6 +62,45 @@ public abstract class GridGame {
 		return n == 0 ? Double.NaN : Utils.round(1 - sum/n, 4) * 100;
 	}
 	
+	public abstract double[] getState();
+
+	public abstract void oneTurn();
+	
+	public void setupForTurn() {}
+	
+	protected static void trainModeler(ModelLearnerHeavy modeler, int turns, GridGame game, int sampleSizeMultiplier,
+			int repaintMs, List<double[]> actionChoices, EnvTranslator actionTranslator) {
+		Planner chimp = Planner.createRandomChimp();
+		boolean repaint = repaintMs > 0;
+		for (int t = 0; t < turns; t++) {
+			long startMs = System.currentTimeMillis();
+			double[] actionNN = chimp.getOptimalAction(game.getState(), actionChoices, 0, 0.1);
+			game.chosenAction = actionTranslator.fromNN(actionNN);
+			game.setupForTurn();
+			modeler.observePreState(game.getState());
+			modeler.observeAction(actionTranslator.toNN(game.chosenAction));
+			game.oneTurn();
+			frame.repaint();
+			modeler.observePostState(game.getState());
+			modeler.saveMemory();
+			if (repaint) try {
+				long elapsedMs = System.currentTimeMillis() - startMs;
+				Thread.sleep(Math.max(0, repaintMs - elapsedMs));
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	protected static ModelLearnerHeavy trainedModeler(int numVars, int numStates, GridGame game, int sampleSizeMultiplier,
+			int repaintMs, List<double[]> actionChoices, EnvTranslator actionTranslator, int[] jdmHL) {
+		int turns = numStates * sampleSizeMultiplier;
+		ModelLearnerHeavy modeler = new ModelLearnerHeavy(500, new int[] {numVars,numVars},
+				null, jdmHL, ActivationFunction.SIGMOID0p5, turns);
+		trainModeler(modeler, turns, game, sampleSizeMultiplier, repaintMs, actionChoices, actionTranslator);
+		return modeler;
+	}
+	
 	protected abstract void paintGrid(Graphics g);
 	
 	public static void print(double[][] grid) {
@@ -71,9 +115,6 @@ public abstract class GridGame {
 	}
 }
 
-
-
-
 @SuppressWarnings("serial")
 class GridPanel extends JPanel {
 	final int gUnit;
@@ -85,7 +126,7 @@ class GridPanel extends JPanel {
 	}
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
-		game.paintGrid(g);
+		if (game != null) game.paintGrid(g);
 	}
 	public Dimension getPreferredSize() {
 		if (game == null) return new Dimension(0, 0);

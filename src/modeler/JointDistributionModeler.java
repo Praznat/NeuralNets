@@ -12,7 +12,10 @@ public class JointDistributionModeler extends ModelerModule {
 	protected void analyzeTransition(TransitionMemory tm, double lRate,
 			double mRate, double sRate) {
 		final double[] ins = tm.getAllVars();
-		final double[] targets = tm.getPostState();
+		final double[] postState = tm.getPostState();
+		final double[] targets = new double[postState.length + 1];
+		System.arraycopy(postState, 0, targets, 0, postState.length);
+		targets[postState.length] = 1;
 		nnLearn(ins, targets, lRate, mRate, sRate);
 	}
 
