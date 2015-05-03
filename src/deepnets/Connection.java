@@ -58,7 +58,7 @@ public class Connection implements Serializable {
 
 	@Override
 	public String toString() {
-		return "C" + Utils.round(weight.getWeight(), 2);
+		return inputNode.shortId() + "-" + outputNode.shortId() + " C" + Utils.round(weight.getWeight(), 2);
 	}
 	
 	public static Collection<Connection> getAllConnections(FFNeuralNetwork ann) {

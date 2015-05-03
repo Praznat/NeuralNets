@@ -38,18 +38,20 @@ public abstract class ModelerModule {
 	public void learn(Collection<TransitionMemory> memories, double stopAtErrThreshold,
 			long displayProgressMs, int iterations, double lRate, double mRate, double sRate,
 			boolean isRecordingTraining, ArrayList<Double> trainingErrorLog) {
-		long lastMs = System.currentTimeMillis();
+		long lastMs = 0;
 		double lastErr = 1;
 		int strikesLeft = STRIKES;
 		for (int i = 0; i < iterations; i++) {
+
+			Collections.shuffle((List<TransitionMemory>)memories);
 			for (TransitionMemory m : memories) analyzeTransition(m, lRate, mRate, sRate);
 			double err = getConfidenceEstimate();
-			if (stopAtErrThreshold > 0 && err < stopAtErrThreshold) break;
 			if (displayProgressMs > 0 && System.currentTimeMillis() - lastMs >= displayProgressMs) {
 				System.out.println(Utils.round(((double)i)*100 / iterations, 2) + "%"
 						+ "	err:	" + err);
 				lastMs = System.currentTimeMillis();
 			}
+			if (stopAtErrThreshold > 0 && err < stopAtErrThreshold) break;
 			if (isRecordingTraining) trainingErrorLog.add(err);
 			if (lastErr - err < NO_ERR_CHG_THRESH && strikesLeft-- <= 0) {
 				System.out.println("Not learning anymore");

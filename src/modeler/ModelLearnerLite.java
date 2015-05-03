@@ -31,7 +31,7 @@ public class ModelLearnerLite extends ModelLearner {
 	@Override
 	public void learnFromMemory(double lRate, double mRate, double sRate,
 			boolean resample, int iterations, long displayProgressMs, double stopAtErrThreshold) {
-		Collection<TransitionMemory> memories = experienceReplay.getBatch(resample);
+		Collection<TransitionMemory> memories = experienceReplay.getBatch();
 		boolean debug = true;
 		if (debug) System.out.println("Initiated Learning");
 		long ms = System.currentTimeMillis();

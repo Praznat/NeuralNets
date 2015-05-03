@@ -33,7 +33,7 @@ The values of the variables that comprise an action that affects the transition
 The values of the variables that comprise the subsequent state (the "after" state in a transition)
 
 Components:
-1. Variable Transition Approximator (VTA)
+1. Variable Transition Predictor a.k.a. "predictor"
 This is a neural network that learns to associate X and A with X'. It learns at each step by feeding
 the current state variables and action variables into the inputs, then transitioning to a next state
 and using its variables as the outputs, then employing some learning method such as backpropagation.
@@ -43,15 +43,14 @@ current state and action variables to obtain outputs ranging from 0 to 1. The pr
 of variables of value 0 or 1 given by probabilities equaling the network outputs. If all of the state
 variables are discrete and independent of one another, the VTA will be sufficient to model transitions.
 DBNs : "factored states"
-2. Inter-variable Relationship Modeler (IRM)
+2. Variable Relationship Modeler a.k.a. "conditioner"
 If some variables are correlated, another step is necessary to ensure only realistic states are
 predicted. To illustrate, consider the following two example environments.
-In environment 1, the only two reachable states are {0,0} and {1,1}.
-In environment 2, the only two reachable states are {1,0} and {0,1}.
-In both environments the probability of reaching each state is 50% regardless of the previous state and
-action (for simplicity). Now in both cases, a neural network model learner will learn to output
-approximately {0.5, 0.5} for all transitions, and all four states will be predicted at equal rates for
-both environments. In order to only predict states that are reachable in the learned environment, the
+In environment 1, the only two reachable states from x are [0,0] and [1,1].
+In environment 2, the only two reachable states from x are [1,0] and [0,1].
+Suppose in both environments the probability of reaching each state from x is 50%. Now in both cases, a neural network model learner will learn to output
+approximately {0.5, 0.5} given input x, and all four states will be sampled at equal rates for
+both environments. In order to only sample states that are reachable in the learned environment, the
 predicted state from the VTA is fed into an IRM neural network to arrive at more appropriate outputs.
 This step can be repeated multiple times for better results. The IRM is trained simultaneously with the VTA.
 At each transition, the inputs to the IRM are all variables X, A, and X', and the target output is X'.
@@ -63,12 +62,15 @@ Qualities of NFSTM
 2. Integrates with logical planner (DecisionProcess)
 3. Relatively low complexity (Comparison with tables)
 4. Learns stochastic environments (Geysers)
-5. Separates reward module (GridTagGame, Collector)
-	a. Object modularization (GridTagGame?)
+5. Separates reward module (GridTagGame, Collector, axistransfer)
+	a. Object modularization (GridTagGame?, axistransfer)
+	b. examples: axistransfer collect x, avoid x, get right in front of x then dodge, etc
 6. Transfer learning (AxisTransfer)
 7. Abduction (Backward vs forward reasoning)
 8. Biology (That paper)
 9. Learning instincts (Model -> policy)
+
+neural net based value function approximation: has to retrain every time the reward function changes
 
 caveats: when to stop training, how good is "good" error, when are there not enough training samples,
 when the neural net architecture is appropriate or not, etc
@@ -98,6 +100,7 @@ already by reinforcement learning methods based on "approximate value functions"
 instead of only trying to approximate the reward based on state variables, the whole model learner approximates
 the transitions in all of the state variables.
 Deep learning
+Modularization (cite pruninggood) -> objectification (cite littman)
 
 Why separate reward function?
 Learning is its own reward; play behavior in animals; learning about environment before reward is relevant;

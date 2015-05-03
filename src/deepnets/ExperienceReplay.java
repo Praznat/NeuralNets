@@ -37,8 +37,8 @@ public class ExperienceReplay<T extends ExperienceReplay.Memory> {
 		return result;
 	}
 
-	public Collection<T> getBatch(boolean resample) {
-		return getBatch(dataMemory.size(), resample);
+	public Collection<T> getBatch() {
+		return getBatch(dataMemory.size(), false);
 	}
 	
 	public boolean isFull() {

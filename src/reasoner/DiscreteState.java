@@ -7,9 +7,12 @@ public class DiscreteState {
 	final boolean[] factoredState;
 	
 	public DiscreteState(double[] rawState) {
-		this.rawState = rawState;
+		this.rawState = new double[rawState.length];
 		this.factoredState = new boolean[rawState.length];
-		for (int i = 0; i < rawState.length; i++) this.factoredState[i] = rawState[i] > 0.5;
+		for (int i = 0; i < rawState.length; i++) {
+			this.factoredState[i] = rawState[i] > 0.5;
+			this.rawState[i] = Math.round(rawState[i]);
+		}
 	}
 	@Override
 	public boolean equals(Object other) {

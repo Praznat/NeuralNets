@@ -66,7 +66,8 @@ public class Node implements Serializable {
 	
 	@Override
 	public String toString() {
-		return parentLayer.toString() + nodeInLayer + " A:" + activation;
+		return shortId();
+//		return parentLayer.toString() + nodeInLayer + " A:" + activation;
 	}
 
 	public ActivationFunction getActivationFunction() {
@@ -91,5 +92,9 @@ public class Node implements Serializable {
 
 	public void setActivationFunction(ActivationFunction actFn) {
 		this.activationFunction = actFn;
+	}
+
+	public String shortId() {
+		return parentLayer.toString() + nodeInLayer;
 	}
 }

@@ -6,9 +6,9 @@ import deepnets.*;
 
 import modeler.ModelLearnerHeavy;
 import reasoner.*;
+import reasoner.DecisionProcess.LogLevel;
 
 public class CollectorGame extends GridExploreGame {
-
 
 	private static boolean WRAP = false;
 	private static boolean SEE_WALLS = true;
@@ -52,8 +52,8 @@ public class CollectorGame extends GridExploreGame {
 	public static CollectorGame trainedGame(int size, int learnIterations, int sampleSizeMultiplier, int m, int repaintMs) {
 		CollectorGame game = new CollectorGame(size);
 		FFNeuralNetwork storedNet = Utils.loadNetworkFromFile(SAVE_NAME);
-		game.modeler = trainedModeler(size*size*m, size*size, game, sampleSizeMultiplier, repaintMs,
-				game.actionChoices, actionTranslator, null);
+		game.modeler = trainedModeler(size*size*m, size*size, game, storedNet == null ? sampleSizeMultiplier : 1, repaintMs,
+				game.actionChoices, actionTranslator, new int[] {size*size*3});
 		if (storedNet == null) {
 			game.learnFromMemory(learnIterations);
 			Utils.saveNetworkToFile(SAVE_NAME, game.modeler.getModelVTA().getNeuralNetwork());
@@ -69,28 +69,33 @@ public class CollectorGame extends GridExploreGame {
 	}
 	
 	private static void test1() {
-		int size = 3;
-		int numSteps = size * size;
+		int numSteps = SIZE * SIZE;
 		int numRuns = 24;
-		int joints = 3;
+		int joints = 1;
 		int learnSteps = 50;
 		int sampleSizeMultiplier = 500;
 		int nodeMult = 5;
 		int learnIterations = 200/nodeMult;
-		int lilLearnIterations = 100/nodeMult;
+		int lilLearnIterations = 20/nodeMult;
 		int epochs = 15000;
 		CollectorGame game = trainedGame(SIZE, learnIterations, sampleSizeMultiplier, nodeMult, 2);
 
 		game.createNewFoodPatch();
 		game.createNewWalls();
+		double skewFactor = 0.1;
+		double discRate = 0.2;
+		DecisionProcess decisionProcess = new DecisionProcess(game.modeler, game.actionChoices, numSteps,
+				numRuns, joints, skewFactor, discRate);
+		decisionProcess.setLogging(LogLevel.MID);
 		Planner planner = Planner.createMonteCarloPlanner(game.modeler, numSteps, numRuns, game.SEEK,
 				false, 0.25, joints, null, GridExploreGame.actionTranslator);
 		Point lastPos = null;
 		for (int i = 0; i < epochs; i++) {
 			long startMs = System.currentTimeMillis();
-			double explore = lastPos != null && game.playerPos.distance(lastPos) == 0 ? 0.9 : 0.2;
+			double explore = lastPos != null && game.playerPos.distance(lastPos) == 0 ? 0.9 : 0.1;
 			lastPos = game.playerPos.getLocation();
 			double[] preState = game.getState();
+//			double[] actionNN = decisionProcess.buildDecisionTree(preState, game.SEEK, 3, 0, true, explore);
 			double[] actionNN = planner.getOptimalAction(preState, game.actionChoices, explore, 0.5);
 			game.modeler.observePreState(preState);
 			game.modeler.observeAction(actionNN);

@@ -3,13 +3,17 @@ package deepnets.testing;
 import java.awt.*;
 import java.util.Iterator;
 
+import deepnets.*;
+
 import modeler.EnvTranslator;
 import reasoner.*;
+import reasoner.DecisionProcess.LogLevel;
 
 public class StochasticPitfallStage2 extends StochasticPitfall {
 
+	private static final String SAVE_NAME = ""; // DOESNT SAVE JDM!
 	private int currGeiser;
-	private double painfullness = 12;
+	private double painfullness = 20;
 	private boolean isStochastic;
 	
 	protected RewardFunction MOVE = new RewardFunction() {
@@ -40,23 +44,30 @@ public class StochasticPitfallStage2 extends StochasticPitfall {
 	
 	private static void test() {
 		int size = 6;
-		int learnIterations = 100;
+		int learnIterations = 20;
 		int sampleSizeMultiplier = 200;
 		int repaintMsTraining = 10;
 		int repaintMsTest = 100;
-		boolean isStochastic = false;
+		boolean isStochastic = true;
 		StochasticPitfallStage2 game = trainedGame(size, learnIterations,
 				sampleSizeMultiplier, repaintMsTraining, isStochastic);
 		System.out.println("Hit rate:	" + game.getScore());
 		game.resetPoints();
-		int numSteps = 3;
+		int numSteps = 1;
 		int numRuns = ACTION_CHOICES.size() * 12;
 		double discountRate = 0.0;
 		int joints = 10;
-		int upPainfulnessTurns = 100;
-		double painChange = -1;
+		int upPainfulnessTurns = 50;
+		double painChange = -3;
 		Planner planner = Planner.createMonteCarloPlanner(game.modeler, numSteps, numRuns,
 				game.MOVE, false, discountRate, joints, null, GridExploreGame.actionTranslator);
+		double confusion = 0.01;
+		double skewFactor = 0.05;
+		double discRate = 0.1;
+		double cutoffProb = 0.05;
+		DecisionProcess decisionProcess = new DecisionProcess(game.modeler, ACTION_CHOICES, numSteps,
+				numRuns, joints, skewFactor, discRate, cutoffProb);
+		decisionProcess.setLogging(LogLevel.HI);
 		for (int i = 0; i < upPainfulnessTurns * 10; i++) {
 			if (i % upPainfulnessTurns == 0) {
 				game.painfullness += painChange;
@@ -71,6 +82,8 @@ public class StochasticPitfallStage2 extends StochasticPitfall {
 			long startMs = System.currentTimeMillis();
 			double[] preState = game.getState();
 			game.chosenAction = planner.getOptimalAction(preState, ACTION_CHOICES, 0.01, 0.1);
+//			game.chosenAction = decisionProcess.buildDecisionTree(preState, game.MOVE, numSteps, 0,
+//					true, confusion);
 			game.oneTurn();
 			try {
 				long elapsedMs = System.currentTimeMillis() - startMs;
@@ -85,10 +98,16 @@ public class StochasticPitfallStage2 extends StochasticPitfall {
 	public static StochasticPitfallStage2 trainedGame(int size, int learnIterations,
 			int sampleSizeMultiplier, int repaintMs, boolean isStochastic) {
 		StochasticPitfallStage2 game = new StochasticPitfallStage2(size);
+		FFNeuralNetwork storedNet = Utils.loadNetworkFromFile(SAVE_NAME);
 		game.isStochastic = isStochastic;
 		game.modeler = trainedModeler(size * HEIGHT, size, game, sampleSizeMultiplier, repaintMs, ACTION_CHOICES,
 				EnvTranslator.SAME, new int[] {size * 2});
-		game.modeler.learnFromMemory(1.5, 0.5, 0, false, learnIterations, 10000);
+		if (storedNet == null) {
+			game.modeler.learnFromMemory(1.5, 0.5, 0, false, learnIterations, 10000);
+			Utils.saveNetworkToFile(SAVE_NAME, game.modeler.getModelVTA().getNeuralNetwork());
+		} else {
+			game.modeler.getModelVTA().setANN(storedNet);
+		}
 		return game;
 	}
 	

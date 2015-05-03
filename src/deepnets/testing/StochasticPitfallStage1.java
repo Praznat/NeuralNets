@@ -2,10 +2,15 @@ package deepnets.testing;
 
 import java.awt.*;
 
+import deepnets.*;
+
 import modeler.EnvTranslator;
 import reasoner.*;
+import reasoner.DecisionProcess.LogLevel;
 
 public class StochasticPitfallStage1 extends StochasticPitfall {
+
+	private static final String SAVE_NAME = "PITFALL_LOGS";
 
 	protected double logFrequency;
 	
@@ -40,17 +45,25 @@ public class StochasticPitfallStage1 extends StochasticPitfall {
 				sampleSizeMultiplier, repaintMsTraining);
 		System.out.println("Hit rate:	" + game.getScore());
 		game.resetPoints();
-		int numSteps = 6;
+		int numSteps = 4;
 		int numRuns = ACTION_CHOICES.size() * 3;
 		int joints = 10;
-		Planner planner = Planner.createMonteCarloPlanner(game.modeler, numSteps, numRuns, game.AVOID_LOGS,
-				false, 0.25, joints, null, GridExploreGame.actionTranslator);
+		double confusion = 0.01;
+		double skewFactor = 0.05;
+		double discRate = 0.2;
+		double cutoffProb = 0.2;
+//		Planner planner = Planner.createMonteCarloPlanner(game.modeler, numSteps, numRuns, game.AVOID_LOGS,
+//				false, 0.25, joints, null, GridExploreGame.actionTranslator);
+		DecisionProcess decisionProcess = new DecisionProcess(game.modeler, ACTION_CHOICES, numSteps,
+				numRuns, joints, skewFactor, discRate, cutoffProb);
+		decisionProcess.setLogging(LogLevel.HI);
 		for (int i = 0; i < 1000; i++) {
 			long startMs = System.currentTimeMillis();
 			double[] preState = game.getState();
-			game.chosenAction = planner.getOptimalAction(preState, ACTION_CHOICES, 0.01, 0.1);
+//			game.chosenAction = planner.getOptimalAction(preState, ACTION_CHOICES, 0.01, 0.1);
+			game.chosenAction = decisionProcess.buildDecisionTree(preState, game.AVOID_LOGS, numSteps, 0,
+					true, confusion);
 			game.setupForTurn();
-			// TODO if jumping, override chosenAction with last action taken on ground
 			game.oneTurn();
 			try {
 				long elapsedMs = System.currentTimeMillis() - startMs;
@@ -65,9 +78,15 @@ public class StochasticPitfallStage1 extends StochasticPitfall {
 	public static StochasticPitfallStage1 trainedGame(int size, double logFrequency,
 			int learnIterations, int sampleSizeMultiplier, int repaintMs) {
 		StochasticPitfallStage1 game = new StochasticPitfallStage1(size, logFrequency);
-		game.modeler = trainedModeler(size * HEIGHT, size, game, sampleSizeMultiplier, repaintMs, ACTION_CHOICES,
-				EnvTranslator.SAME, null);
-		game.modeler.learnFromMemory(1.5, 0.5, 0, false, learnIterations, 10000);
+		FFNeuralNetwork storedNet = Utils.loadNetworkFromFile(SAVE_NAME);
+		game.modeler = trainedModeler(size * HEIGHT, size, game, storedNet == null ? sampleSizeMultiplier
+				: 1, repaintMs, ACTION_CHOICES, EnvTranslator.SAME, null);
+		if (storedNet == null) {
+			game.modeler.learnFromMemory(1.5, 0.5, 0, false, learnIterations, 10000);
+			Utils.saveNetworkToFile(SAVE_NAME, game.modeler.getModelVTA().getNeuralNetwork());
+		} else {
+			game.modeler.getModelVTA().setANN(storedNet);
+		}
 		return game;
 	}
 	

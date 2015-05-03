@@ -1,6 +1,7 @@
 package modeler;
 
 import deepnets.ExperienceReplay.Memory;
+import deepnets.*;
 
 public class TransitionMemory implements Memory {
 
@@ -40,6 +41,12 @@ public class TransitionMemory implements Memory {
 		double[] result = new double[postStateVars.length];
 		System.arraycopy(postStateVars, 0, result, 0, postStateVars.length);
 		return result;
+	}
+	
+	@Override
+	public String toString() {
+		return "	S:	" + Utils.stringArray(preStateVars, 2) + "	A:	" + Utils.stringArray(action, 2) 
+				+ "	S':	" + Utils.stringArray(postStateVars, 2);
 	}
 
 }

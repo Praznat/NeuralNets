@@ -2,7 +2,9 @@ package deepnets;
 
 import java.io.*;
 import java.lang.reflect.Array;
-import java.util.Collection;
+import java.util.*;
+
+import modeler.ModelLearner;
 
 
 public class Utils {
@@ -99,27 +101,49 @@ public class Utils {
 		for (Node n : nodes) result[i++] = n.getActivation();
 		return result;
 	}
-	
+
+	public static void saveModelerToFile(String namey, ModelLearner modeler) {
+		if (namey.isEmpty()) return;
+		saveNetworkToFile(namey+"P", modeler.getTransitionsModule().getNeuralNetwork());
+		saveNetworkToFile(namey+"C", modeler.getFamiliarityModule().getNeuralNetwork());
+	}
+	public static boolean loadModelerFromFile(ModelLearner modeler, String namey) {
+		if (namey.isEmpty()) return false;
+		FFNeuralNetwork storedP = Utils.loadNetworkFromFile(namey+"P");
+		FFNeuralNetwork storedC = Utils.loadNetworkFromFile(namey+"C");
+		if (storedP == null || storedC == null) {
+			return false;
+		} else {
+			modeler.getTransitionsModule().setANN(storedP);
+			modeler.getFamiliarityModule().setANN(storedP);
+			return true;
+		}
+	}
+
+	// TODO save modeler: VTA & JDM BOTH!
 	public static void saveNetworkToFile(String namey, FFNeuralNetwork ann) {
-	      try {
-	         File file = new File("./saveFiles/"+namey);
-	         FileOutputStream fileOut = new FileOutputStream(file);
-	         if (!file.exists()) file.createNewFile();
-	         ObjectOutputStream out = new ObjectOutputStream(fileOut);
-	         out.writeObject(ann);
-	         out.close();
-	         fileOut.close();
-	         System.out.println("Serialized data is saved in " + namey);
-	      } catch(Exception e) {
-	          e.printStackTrace();
-	      }
+		if (namey.isEmpty()) return;
+		try {
+			File file = new File("./saveFiles/"+namey);
+			FileOutputStream fileOut = new FileOutputStream(file);
+			if (!file.exists()) file.createNewFile();
+			ObjectOutputStream out = new ObjectOutputStream(fileOut);
+			out.writeObject(ann);
+			out.close();
+			fileOut.close();
+			System.out.println("Serialized data is saved in " + namey);
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
 	}
 	public static FFNeuralNetwork loadNetworkFromFile(String namey) {
+		if (namey.isEmpty()) return null;
 		try {
 			FileInputStream fileIn = new FileInputStream("./saveFiles/"+namey);
 			ObjectInputStream in = new ObjectInputStream(fileIn);
 			Object result = in.readObject();
 			in.close();
+	         System.out.println("Loading data from " + namey);
 			fileIn.close();
 			return (FFNeuralNetwork) result;
 		} catch(FileNotFoundException e) {
@@ -129,5 +153,33 @@ public class Utils {
 			System.out.println(e);
 			return null;
 		}
+	}
+
+	public static double sum(Collection<Double> ds) {
+		double sum = 0;
+		for (double d : ds) sum += d;
+		return sum;
+	}
+	public static double correlation(ArrayList<Double> v1, ArrayList<Double> v2) {
+		double sumDiff = 0;
+		double ssq1 = 0;
+		double ssq2 = 0;
+		double avgV1 = sum(v1) / v1.size();
+		double avgV2 = sum(v2) / v2.size();
+		int n = Math.min(v1.size(), v2.size());
+		for (int i = 0; i < n; i++) {
+			double d1 = v1.get(i) - avgV1;
+			double d2 = v2.get(i) - avgV2;
+			sumDiff += d1 * d2;
+			ssq1 += d1 * d1;
+			ssq2 += d2 * d2;
+		}
+		return sumDiff / (Math.sqrt(ssq1) * Math.sqrt(ssq2));
+	}
+
+	public static boolean sameArray(double[] state, double[] otherState) {
+		if (state.length != otherState.length) return false;
+		for (int i = 0; i < state.length; i++) if (state[i] != otherState[i]) return false;
+		return true;
 	}
 }

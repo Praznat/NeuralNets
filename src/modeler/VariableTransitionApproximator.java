@@ -6,7 +6,7 @@ public class VariableTransitionApproximator extends ModelerModule {
 	
 	public VariableTransitionApproximator(ActivationFunction actFn, int[] numHidden, int errorHalfLife) {
 		super(actFn, numHidden, errorHalfLife);
-		if (actFn != ActivationFunction.SIGMOID0p5) throw new IllegalStateException("must use sigmoidal if representing probabilities");
+//		if (actFn != ActivationFunction.SIGMOID0p5) throw new IllegalStateException("must use sigmoidal if representing probabilities");
 	}
 	
 	@Override

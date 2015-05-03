@@ -8,6 +8,7 @@ import deepnets.Node.Factory;
 @SuppressWarnings("serial")
 public class Layer<N extends Node> implements Serializable {
 	private final ArrayList<N> nodes = new ArrayList<N>();
+	private String name = "";
 	
 	public static Layer<Node> create(int n, ActivationFunction actFn, Factory<? extends Node> nodeFactory) {
 		Layer<Node> result = new Layer<Node>();
@@ -53,6 +54,15 @@ public class Layer<N extends Node> implements Serializable {
 	}
 	public void activate() {
 		for (Node n : nodes) n.activate();
+	}
+	
+	public void setName(String name) {
+		this.name = name;
+	}
+	
+	@Override
+	public String toString() {
+		return name;
 	}
 	
 }

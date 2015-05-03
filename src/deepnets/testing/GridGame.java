@@ -68,7 +68,7 @@ public abstract class GridGame {
 	
 	public void setupForTurn() {}
 	
-	protected static void trainModeler(ModelLearnerHeavy modeler, int turns, GridGame game, int sampleSizeMultiplier,
+	protected static void trainModeler(ModelLearnerHeavy modeler, int turns, GridGame game,
 			int repaintMs, List<double[]> actionChoices, EnvTranslator actionTranslator) {
 		Planner chimp = Planner.createRandomChimp();
 		boolean repaint = repaintMs > 0;
@@ -95,9 +95,10 @@ public abstract class GridGame {
 	protected static ModelLearnerHeavy trainedModeler(int numVars, int numStates, GridGame game, int sampleSizeMultiplier,
 			int repaintMs, List<double[]> actionChoices, EnvTranslator actionTranslator, int[] jdmHL) {
 		int turns = numStates * sampleSizeMultiplier;
-		ModelLearnerHeavy modeler = new ModelLearnerHeavy(500, new int[] {numVars,numVars},
+		System.out.println("Observing " + turns + " samples");
+		ModelLearnerHeavy modeler = new ModelLearnerHeavy(500, new int[] {numVars*2},
 				null, jdmHL, ActivationFunction.SIGMOID0p5, turns);
-		trainModeler(modeler, turns, game, sampleSizeMultiplier, repaintMs, actionChoices, actionTranslator);
+		trainModeler(modeler, turns, game, repaintMs, actionChoices, actionTranslator);
 		return modeler;
 	}
 	

@@ -4,7 +4,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 
-import modeler.ModelLearnerHeavy;
+import modeler.*;
 import reasoner.*;
 import utils.RandomUtils;
 import deepnets.*;
@@ -174,7 +174,11 @@ public class GridTagGame extends GridGame {
 			modeler.observePostState(game.getState());
 			modeler.learnOnline(1.5, 0.5, 0); // instead of saveMemory
 		}
-		modeler.learnFromMemory(1.5, 0.5, 0, false, 100, 10000);
+		modeler.learnFromMemory(1.5, 0.5, 0, false, 150, 10000);
+//		WeightPruner.pruneBelowAvg(modeler.getModelVTA().getNeuralNetwork(), 0.2);
+//		modeler.learnFromMemory(1.5, 0.5, 0, false, 100, 10000);
+//		WeightPruner.inOutAbsConnWgt(modeler.getModelVTA().getNeuralNetwork());
+	
 		// up to now should be similar test1 (except walls, exploration, etc)
 		// TODO random mutate actions when both rewards are zero using +-
 		// TODO learning to teleport ok?
@@ -200,9 +204,9 @@ public class GridTagGame extends GridGame {
 //				game.print(game.chosenAction);
 				game.chosenAction = planner.getOptimalAction(game.getState(), ACTION_CHOICES, 0, 0);
 				
-//				double[] prophesy = Foresight.montecarlo(modeler, game.getState(), game.chosenAction,
-//					numPlanSteps, numPlanRuns, 10, 0);
-//				print(game.getGridFromState(prophesy, true), game.getGridFromState(prophesy, false));
+				double[] prophesy = Foresight.montecarlo(modeler, game.getState(), game.chosenAction,
+					numPlanSteps, numPlanRuns, 10);
+				print(game.getGridFromState(prophesy, true), game.getGridFromState(prophesy, false));
 				
 				try {
 					long elapsedMs = System.currentTimeMillis() - startMs;
@@ -252,7 +256,7 @@ public class GridTagGame extends GridGame {
 		}
 	};
 	final OpponentRule mostlyClockwise = new OpponentRule() {
-		final double explore = 0.5; // TODO set higher and see difference between joint and no joint
+		final double explore = 0.99; // TODO set higher and see difference between joint and no joint
 		@Override
 		Point posTo(Point from) {
 			boolean isClockWise = Math.random() >= explore;
@@ -409,7 +413,7 @@ public class GridTagGame extends GridGame {
 	abstract class OpponentRule {
 		abstract Point posTo(Point from);
 		void move() {
-			setOpponentPos(opponentPos);
+			setOpponentPos(posTo(opponentPos));
 		}
 	}
 

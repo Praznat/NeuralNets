@@ -39,7 +39,7 @@ public class ModelLearnerHeavy extends ModelLearner {
 	@Override
 	public void learnFromMemory(double lRate, double mRate, double sRate,
 			boolean resample, int iterations, long displayProgressMs, double stopAtErrThreshold) {
-		Collection<TransitionMemory> memories = experienceReplay.getBatch(resample);
+		Collection<TransitionMemory> memories = experienceReplay.getBatch();
 		boolean debug = true;
 		if (debug) System.out.println("Initiated Learning");
 		long ms = System.currentTimeMillis();
@@ -96,7 +96,7 @@ public class ModelLearnerHeavy extends ModelLearner {
 				vars[j++] = a;
 			}
 			final double currDiff = Math.sqrt(sumdiff / (outputNodes.size() - 1));
-			if (lastDiff - currDiff < 0.01) break; // TODO should be about currDiff - lastDiff
+			if (lastDiff - currDiff < 0.0001) break; // TODO should be about currDiff - lastDiff
 			lastDiff = currDiff;
 		}
 		double[] result = new double[vars.length - postStateIndex];

@@ -1,7 +1,8 @@
 package modeler;
 
-import java.util.ArrayList;
+import java.util.*;
 
+import reasoner.DiscreteState;
 import deepnets.*;
 
 public abstract class ModelLearner {
@@ -92,7 +93,7 @@ public abstract class ModelLearner {
 		double sum = 0;
 		ModelerModule vta = getTransitionsModule();
 		allmemo:
-		for (TransitionMemory tm : experienceReplay.getBatch(false)) {
+		for (TransitionMemory tm : experienceReplay.getBatch()) {
 			observeAction(tm.action);
 			observePreState(tm.preStateVars);
 			feedForward();
@@ -103,6 +104,21 @@ public abstract class ModelLearner {
 			sum++;
 		}
 		return sum / experienceReplay.getSize();
+	}
+	
+	public void filterExperienceToBooleans() {
+		Set<DiscreteState> uniqueMemories = new HashSet<DiscreteState>();
+		for (TransitionMemory tm : experienceReplay.getBatch()) {
+			uniqueMemories.add(new DiscreteState(tm.getAllVars()));
+		}
+		experienceReplay.clear();
+		int sa = workingPreState.length + workingAction.length;
+		for (DiscreteState ds : uniqueMemories) {
+			double[] rs = ds.getRawState();
+			TransitionMemory tm = new TransitionMemory(Arrays.copyOfRange(rs, 0, sa),
+					workingPreState.length, Arrays.copyOfRange(rs, sa, rs.length));
+			experienceReplay.addMemory(tm);
+		}
 	}
 
 //	public abstract double getFamiliarity(double[] allVars);

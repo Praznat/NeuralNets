@@ -1,10 +1,11 @@
 package deepnets.testing;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import modeler.*;
 
-import reasoner.Foresight;
+import reasoner.*;
 import utils.RandomUtils;
 
 import deepnets.*;
@@ -23,7 +24,7 @@ public class BasicTests {
 	}
 
 	private static void xor() {
-		System.out.println("XOR");
+		System.out.println("RAW XOR");
 		Layer<Node> inputLayer = Layer.createInputLayer(2, Node.BASIC_NODE_FACTORY);
 		Layer<Node> hiddenLayer = Layer.createHiddenFromInputLayer(inputLayer, 4,
 				ActivationFunction.SUPERSIGMOID, Node.BASIC_NODE_FACTORY);
@@ -120,6 +121,7 @@ public class BasicTests {
 	}
 	
 	private static void transitionApproximator() {
+		System.out.println("modeling xor");
 		ModelLearnerHeavy modeler = new ModelLearnerHeavy(500, new int[] {5}, 
 				new int[] {5}, new int[] {5}, ActivationFunction.SIGMOID0p5, 50);
 		double[][] inputSamples = {{0,0},{0,1},{1,0},{1,1}};
@@ -148,6 +150,7 @@ public class BasicTests {
 			for (int j = 0; j < wins.length; j++) winRate[j] += wins[j];
 		}
 		for (int j = 0; j < winRate.length; j++) winRate[j] /= turns;
+		System.out.println("KWIK scores");
 		System.out.println(Utils.stringArray(winRate, 4));
 	}
 	private static double[] testKWIKOnce() {
@@ -281,20 +284,42 @@ public class BasicTests {
 	}
 	
 	private static void modeling() {
-		final double[][] inputs = new double[][] {{0,0},{0,0},{0,0}};
-		final double[][] outputs1 = new double[][] {{0,0},{1,1},{0,0}};
-		final double[][] outputs2 = new double[][] {{1,0},{0,1},{0,1}};
-		final DataPoint[] dp1 = new DataPoint[] {DataPoint.create(inputs[0], outputs1[0]),
-				DataPoint.create(inputs[1], outputs1[1]), DataPoint.create(inputs[2], outputs1[2])};
-		final DataPoint[] dp2 = new DataPoint[] {DataPoint.create(inputs[0], outputs2[0]),
-				DataPoint.create(inputs[1], outputs2[1]), DataPoint.create(inputs[2], outputs2[2])};
+		final double[][] inputs = new double[][] {{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1}};//{{0,0},{0,0},{0,0}};
+		final double[][] outputs1 = new double[][] {{0,0},{1,1},{0,0},{1,0},{0,0},{1,1},{0,0},{0,1},{0,0},{1,1},{0,0}};
+		final double[][] outputs2 = new double[][] {{1,0},{0,1},{0,1},{0,0},{1,0},{0,1},{0,1},{1,1},{1,0},{0,1},{0,1}};
+		final DataPoint[] dp1 = new DataPoint[outputs1.length];
+		final DataPoint[] dp2 = new DataPoint[outputs2.length];
+		for (int i = 0; i < inputs.length; i++) {
+			dp1[i] = DataPoint.create(inputs[i], outputs1[i]);
+			dp2[i] = DataPoint.create(inputs[i], outputs2[i]);
+		}
+//		{DataPoint.create(inputs[0], outputs1[0]),
+//				DataPoint.create(inputs[1], outputs1[1]), DataPoint.create(inputs[2], outputs1[2])};
+//		final DataPoint[] dp2 = new DataPoint[] {DataPoint.create(inputs[0], outputs2[0]),
+//				DataPoint.create(inputs[1], outputs2[1]), DataPoint.create(inputs[2], outputs2[2])};
 		final DataPoint[] dps = Utils.append(dp1, dp2);
-		final int trainingEpochs = 100;
+		final int trainingEpochs = 1000;
 		
 		// scenario 1
 		ModelLearnerHeavy modeler1 = learnModelFromData(dp1, trainingEpochs);
 		// scenario 2
 		ModelLearnerHeavy modeler2 = learnModelFromData(dp2, trainingEpochs);
+		int numRuns = 1000;
+		int jointAdjustments = 10;
+		double skewFactor = 0;
+		double cutoffProb = 0.1;
+		DecisionProcess decisioner1 = new DecisionProcess(modeler1, null, 1, numRuns,
+				jointAdjustments, skewFactor, 0, cutoffProb);
+		DecisionProcess decisioner2 = new DecisionProcess(modeler2, null, 1, numRuns,
+				jointAdjustments, skewFactor, 0, cutoffProb);
+		Map<DiscreteState,AtomicInteger> map1 =
+				decisioner1.getImmediateStateGraphForActionGibbs(inputs[0], new double[] {});
+		Map<DiscreteState,AtomicInteger> map2 =
+				decisioner2.getImmediateStateGraphForActionGibbs(inputs[0], new double[] {});
+		System.out.println(map1);
+		System.out.println("#1 Should be approx:	{=545, 0.1.=273, other=99}");
+		System.out.println(map2);
+		System.out.println("#2 Should be approx:	{1.=545, 0.=273, other=99}");
 		
 //		printForData(modeler1, modeler1.getModelTFA(), dps);
 //		System.out.println();
@@ -325,7 +350,7 @@ public class BasicTests {
 	
 	private static ModelLearnerHeavy learnModelFromData(DataPoint[] data, int epochs) {
 		ModelLearnerHeavy modeler = new ModelLearnerHeavy(500,
-				new int[] {5}, new int[] {5}, new int[] {}, ActivationFunction.SIGMOID0p5, 50);
+				new int[] {12}, new int[] {8}, new int[] {15}, ActivationFunction.SIGMOID0p5, 50);
 		for (DataPoint dp : data) {
 			double[] inputs = dp.getInput();
 			modeler.observePreState(inputs[0]);

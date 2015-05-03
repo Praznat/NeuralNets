@@ -48,7 +48,7 @@ public class FFNeuralNetwork implements NeuralNetwork, Serializable {
 		return layers.get(layers.size()-1).getNodes();
 	}
 	
-	public Collection<Layer<? extends Node>> getLayers() {
+	public LinkedList<Layer<? extends Node>> getLayers() {
 		return layers;
 	}
 	public int getNumLayers() {
@@ -93,7 +93,7 @@ public class FFNeuralNetwork implements NeuralNetwork, Serializable {
 			error += Math.pow(target[i] - output, 2);
 //			if (i == 1) System.out.println(target[i] +"	-	"+ output);
 		}
-		return error / target.length;
+		return Math.sqrt(error / target.length);
 	}
 	public static void feedForward(Collection<? extends Node> nodes, double... clampInputs) {
 		feedForward(nodes, null, clampInputs);
