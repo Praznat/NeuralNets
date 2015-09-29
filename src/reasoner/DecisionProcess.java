@@ -3,8 +3,8 @@ package reasoner;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import ann.*;
 import modeler.*;
-import deepnets.*;
 
 public class DecisionProcess {
 	

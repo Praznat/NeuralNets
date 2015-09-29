@@ -1,7 +1,7 @@
 package modeler;
 
-import deepnets.ExperienceReplay.Memory;
-import deepnets.*;
+import ann.*;
+import ann.ExperienceReplay.Memory;
 
 public class TransitionMemory implements Memory {
 
@@ -20,6 +20,14 @@ public class TransitionMemory implements Memory {
 		if (postState != null) postStateVars = postStateVars.clone();
 		System.arraycopy(preStateAndAction, 0, preStateVars, 0, numStateVars);
 		System.arraycopy(preStateAndAction, numStateVars, action, 0, action.length);
+	}
+
+	public double[] getPreState() {
+		return preStateVars;
+	}
+	
+	public double[] getAction() {
+		return action;
 	}
 	
 	public double[] getPreStateAndAction() {

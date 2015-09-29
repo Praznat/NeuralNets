@@ -1,6 +1,6 @@
 package sparsenets;
 
-import deepnets.*;
+import ann.*;
 
 public class SparseFFNetwork extends FFNeuralNetwork {
 

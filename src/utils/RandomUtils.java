@@ -2,7 +2,7 @@ package utils;
 
 import java.util.*;
 
-import deepnets.*;
+import ann.*;
 
 public class RandomUtils {
 

@@ -1,6 +1,6 @@
 package modeler;
 
-import deepnets.*;
+import ann.*;
 
 public class JointAndConditionalModeler extends ModelerModule {
 

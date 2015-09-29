@@ -2,11 +2,11 @@ package modeler;
 
 import java.util.*;
 
-import deepnets.*;
+import ann.*;
 
 public class JointDistributionModeler extends ModelerModule {
 
-	protected boolean hasFamiliarityNode = true;
+	protected boolean hasFamiliarityNode = false;
 	protected boolean shouldDisconnect = true;
 	
 	protected JointDistributionModeler(ActivationFunction actFn, int[] numHidden, int errorHalfLife) {
@@ -54,18 +54,20 @@ public class JointDistributionModeler extends ModelerModule {
 		Map<Node, Integer> hiddenGroups = new HashMap<Node, Integer>();
 		for (int i = 0; i < numHidden; i++) hiddenGroups.put(hidden.get(i), i / hPerGroup);
 		Collection<Connection> disconnections = new ArrayList<Connection>();
+		// kill input to same hidden
 		for (int i = postStatesIndex; i < ins.size(); i++) {
 			Node input = ins.get(i);
 			int designatedGroup = i - postStatesIndex;
 			for (Connection conn : input.getOutputConnections())
-				if (hiddenGroups.get(conn.getOutputNode()) != designatedGroup) disconnections.add(conn);
+				if (hiddenGroups.get(conn.getOutputNode()) == designatedGroup) disconnections.add(conn);
 		}
+		// kill output from different hidden
 		for (int i = 0; i < pslen; i++) {
-			Node output = outs.get((i + 1) % pslen);
+			Node output = outs.get(i);
 			int designatedGroup = i;
 			for (Connection conn : output.getInputConnections()) {
 				Node hNode = conn.getInputNode();
-				if (hNode == BiasNode.INSTANCE) continue;
+				if (BiasNode.isBias(hNode)) continue;
 				if (hiddenGroups.get(hNode) != designatedGroup) disconnections.add(conn);
 			}
 		}
@@ -79,5 +81,11 @@ public class JointDistributionModeler extends ModelerModule {
 
 	public void toggleShouldDisconnect(boolean b) {
 		shouldDisconnect = b;
+	}
+	
+	@Override
+	public void setANN(FFNeuralNetwork ann) {
+		super.setANN(ann);
+		toggleShouldDisconnect(false);
 	}
 }

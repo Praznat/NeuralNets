@@ -2,8 +2,8 @@ package reasoner;
 
 import java.util.*;
 
+import ann.*;
 import modeler.*;
-import deepnets.*;
 
 public class Foresight {
 

@@ -1,6 +1,6 @@
 package modeler;
 
-import deepnets.ActivationFunction.Gaussian;
+import ann.ActivationFunction.Gaussian;
 
 public abstract class EnvTranslator {
 

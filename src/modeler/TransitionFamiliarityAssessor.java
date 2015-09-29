@@ -1,7 +1,7 @@
 package modeler;
 
+import ann.*;
 import utils.RandomUtils;
-import deepnets.*;
 
 public class TransitionFamiliarityAssessor extends ModelerModule {
 

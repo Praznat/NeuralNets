@@ -2,9 +2,9 @@ package reasoner;
 
 import java.util.*;
 
+import ann.Utils;
 import modeler.*;
 import utils.RandomUtils;
-import deepnets.Utils;
 
 public abstract class Planner {
 

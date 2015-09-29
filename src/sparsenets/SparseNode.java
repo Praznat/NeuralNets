@@ -2,7 +2,7 @@ package sparsenets;
 
 import java.util.*;
 
-import deepnets.*;
+import ann.*;
 
 
 public class SparseNode extends Node {

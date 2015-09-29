@@ -2,10 +2,10 @@ package modeler;
 
 import java.util.*;
 
+import ann.*;
 import reasoner.Foresight;
 
 import utils.RandomUtils;
-import deepnets.*;
 
 /**
  * why model learning as opposed to policy learning?

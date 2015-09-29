@@ -2,7 +2,7 @@ package transfer;
 
 import java.util.*;
 
-import deepnets.*;
+import ann.*;
 
 @SuppressWarnings("serial")
 public class ReuseNetwork extends FFNeuralNetwork {
@@ -28,7 +28,7 @@ public class ReuseNetwork extends FFNeuralNetwork {
 		result.getLayers().add(inputLayer);
 		Layer.fullyConnect(inputLayer.getNodes(), sourceInputs);
 //		for (Node n : sourceInputs) n.setActivationFunction(actFn);
-		Layer<? extends Node> outputLayer = Layer.createHiddenFromInputLayer(source.getOutputNodes(),
+		Layer<? extends Node> outputLayer = Layer.createHiddenFromInputLayer(sourceOutputs,
 				sourceOutputs.size(), actFn, result.nodeFactory);
 		result.getLayers().add(outputLayer);
 		BiasNode.connectToLayer(outputLayer);

@@ -2,7 +2,7 @@ package modeler;
 
 import java.util.Collection;
 
-import deepnets.*;
+import ann.*;
 
 /**
  * why model learning as opposed to policy learning?

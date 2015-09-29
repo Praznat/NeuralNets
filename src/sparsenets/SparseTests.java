@@ -2,7 +2,7 @@ package sparsenets;
 
 import java.util.Collection;
 
-import deepnets.*;
+import ann.*;
 
 public class SparseTests {
 

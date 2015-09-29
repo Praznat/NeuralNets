@@ -150,3 +150,82 @@ cite approx dynamic programming
 
 https://www.cis.upenn.edu/~mkearns/papers/reinforcement.pdf
 polynomial in number of STATES
+
+
+
+
+
+
+
+
+TRANSFER
+
+what you already have:
+avoid vs catch (transfer of model in light of new reward)
+
+next steps:
+how to transfer - show that transferring OWN network for SAME game is
+faster than learning from scratch
+	what does faster mean? sample efficiency
+	experiment: using sandwiched network after only few samples (vs control)
+when to transfer - show some method for source selection
+	idea 1: bisimulation
+	idea 2: sandwich several and hope it connects to the best
+if you can guess what game this is from small number of samples, you can plug in the correct network
+jumpstart for Fliers2FlyCells from simple plug-in (not sandwich, just same network)?
+	
+translation networks
+problem of variable mapping
+learn and store networks that map between variables
+use most common ones most often
+for example:
+	1-1 mapping
+	axis rotation
+	axis flip
+	scaling
+choose one that best fits new (few) samples
+if no fit, then learn from scratch
+learn input-to-input mapping network, output-to-output mapping network
+
+Sample efficiency!
+axis transfer: youve learned the horizontal game.
+now you play the vertical version but you only see a couple samples.
+can you reuse the horizontal modeler to help you play the vertical one
+even only after having seen a couple samples of the vertical one?
+
+1. train horizontal player
+2. show a few examples D of vertical game
+3. train control C from scratch (or random) on D
+4. train transfer learner T reusing frozen horizontal modeler on D
+5. compare C vs T
+
+if vertical vs horizontal doesnt work (problem of variable translation):
+fliers but no catcher vs catcher but no fliers
+
+
+Generalization, modularization, objectification, prototypization, etc.
+
+Have limited number of Network Prototypes
+Network prototype specifies conditional relationship network between an output variable
+and a set of input variables specified by the Relationship Function with the output variable
+
+learn relationships from experience
+cell A depends on cell B, cell C depends on cell D,
+A and C are same type, B and D are same type, both relationships are of same type
+
+HyperModeler: model the models
+Network connecting nodes depends on the properties of the variables represented by those
+nodes and on the relationships between those variables
+Example: Fliers
+if (outclass == 1 && inclass == 1 && outcol < rightmost
+	&& inrow == outrow && incol = outcol + 1)
+	-> This is a positive conditional network
+	
+Transfer: change in CPPN rules BUT NOT variable properties, variable relations, or output options
+Example: rotate fliers
+if (outclass == 1 && inclass == 1 && outrow < bottommost
+	&& incol == outcol && inrow = outrow + 1)
+	-> This is a positive conditional network
+	
+QUESTION: for transfer, how to change the CPPN so that the final model best matches the
+new (few) samples in the target task

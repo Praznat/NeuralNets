@@ -2,7 +2,7 @@ package reasoner;
 
 import java.util.*;
 
-import deepnets.*;
+import ann.*;
 import modeler.*;
 
 public class NeuralGibbs {

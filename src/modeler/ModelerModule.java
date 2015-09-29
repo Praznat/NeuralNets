@@ -2,8 +2,9 @@ package modeler;
 
 import java.util.*;
 
+import ann.*;
+import modularization.SoftWeightSharing;
 import utils.Decayer;
-import deepnets.*;
 
 public abstract class ModelerModule {
 
@@ -16,6 +17,8 @@ public abstract class ModelerModule {
 	protected FFNeuralNetwork ann;
 	private final ActivationFunction actFn;
 	private final Decayer decayer;
+	
+	private SoftWeightSharing wgtSharer;
 	
 	protected ModelerModule(ActivationFunction actFn, int[] numHidden, int errorHalfLife) {
 		ann = new FFNeuralNetwork(actFn, 0, 0, numHidden);
@@ -67,12 +70,17 @@ public abstract class ModelerModule {
 		return ann;
 	}
 	
-	protected void nnLearn(double[] ins, double[] targets, double lRate, double mRate, double sRate) {
+	private void setupLearn(double[] ins, double[] targets, double lRate, double mRate, double sRate) {
 		adjustNNSize(ins.length, targets.length);
 		FFNeuralNetwork.feedForward(ann.getInputNodes(), ins);
 		final double error = FFNeuralNetwork.getError(targets, ann.getOutputNodes());
-		observeError(error);
-		FFNeuralNetwork.backPropagate(ann.getOutputNodes(), lRate, mRate, sRate, targets);
+		observeError(error);	
+	}
+	
+	protected void nnLearn(double[] ins, double[] targets, double lRate, double mRate, double sRate) {
+		setupLearn(ins, targets, lRate, mRate, sRate);
+		if (wgtSharer != null) wgtSharer.backPropagate(ann.getOutputNodes(), targets);
+		else FFNeuralNetwork.backPropagate(ann.getOutputNodes(), lRate, mRate, sRate, targets);
 		
 		// print out I/O for debugging
 //		String s = "";
@@ -100,6 +108,10 @@ public abstract class ModelerModule {
 	
 	public void setANN(FFNeuralNetwork ann) {
 		this.ann = ann;
+	}
+
+	public void setWgtSharer(SoftWeightSharing wgtSharer) {
+		this.wgtSharer = wgtSharer;
 	}
 
 }

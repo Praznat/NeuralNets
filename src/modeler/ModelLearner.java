@@ -2,8 +2,8 @@ package modeler;
 
 import java.util.*;
 
+import ann.*;
 import reasoner.DiscreteState;
-import deepnets.*;
 
 public abstract class ModelLearner {
 
@@ -99,6 +99,7 @@ public abstract class ModelLearner {
 			feedForward();
 			int i = 0;
 			for (Node n : vta.getNeuralNetwork().getOutputNodes()) {
+				if (i >= tm.postStateVars.length) break;
 				if (Math.round(n.getActivation()) != Math.round(tm.postStateVars[i++])) continue allmemo;
 			}
 			sum++;
@@ -119,6 +120,10 @@ public abstract class ModelLearner {
 					workingPreState.length, Arrays.copyOfRange(rs, sa, rs.length));
 			experienceReplay.addMemory(tm);
 		}
+	}
+	
+	public ExperienceReplay<TransitionMemory> getExperience() {
+		return experienceReplay;
 	}
 
 //	public abstract double getFamiliarity(double[] allVars);
