@@ -67,7 +67,7 @@ public class ModelSelector {
 		MultiRewardAssessment mra = new MultiRewardAssessment(new RewardFunction() {
 			@Override
 			public double getReward(double[] stateVars) {
-				double [] predictedPostState = Foresight.probabilisticRoundingUnnormalized(stateVars);
+				double[] predictedPostState = Foresight.probabilisticRoundingUnnormalized(stateVars);
 				return Foresight.stateSimilarity(predictedPostState, targetPostState);
 //				return Foresight.stateEquality(predictedPostState, targetPostState);
 			}

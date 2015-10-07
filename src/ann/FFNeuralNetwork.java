@@ -9,7 +9,7 @@ import ann.convolution.*;
 @SuppressWarnings("serial")
 public class FFNeuralNetwork implements NeuralNetwork, Serializable {
 	
-	private final LinkedList<Layer<? extends Node>> layers = new LinkedList<Layer<? extends Node>>();
+	protected final LinkedList<Layer<? extends Node>> layers = new LinkedList<Layer<? extends Node>>();
 	public final Node.Factory<? extends Node> nodeFactory;
 	
 	public FFNeuralNetwork() {
@@ -162,6 +162,21 @@ public class FFNeuralNetwork implements NeuralNetwork, Serializable {
 		printy += "	outputs:	";
 		for (Node n : getOutputNodes()) printy += n.getActivation() + " ";
 		System.out.println(printy);
+	}
+	public void printWeights() {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 1; i < layers.size(); i++) {
+			Layer<? extends Node> layer = layers.get(i);
+			for (Node n : layer.getNodes()) {
+				for (Connection conn : n.getInputConnections()) {
+					if (BiasNode.isBias(conn.getInputNode())) sb.append("B");
+					sb.append(conn.getWeight().getWeight() + "	");
+				}
+				sb.append("\n");
+			}
+			sb.append("\n");
+		}
+		System.out.println(sb.toString());
 	}
 	
 }

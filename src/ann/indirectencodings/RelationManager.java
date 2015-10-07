@@ -13,8 +13,25 @@ import modeler.ModelLearner;
 
 public class RelationManager {
 	
+	public static final IndirectInput RIGHT = new IndirectInput("RIGHT", 1,0,0,0,0,0,0,0,0,0);
+	public static final IndirectInput LEFT = new IndirectInput("LEFT", 0,1,0,0,0,0,0,0,0,0,0);
+	public static final IndirectInput ABOVE = new IndirectInput("ABOVE", 0,0,1,0,0,0,0,0,0,0,0);
+	public static final IndirectInput BELOW = new IndirectInput("BELOW", 0,0,0,1,0,0,0,0,0,0,0);
+	public static final IndirectInput SAME = new IndirectInput("SAME", 0,0,0,0,1,0,0,0,0,0);
+	public static final IndirectInput COLLISION = new IndirectInput("COLLISION", 0,0,0,0,0,1,0,0,0,0,0);
+	public static final IndirectInput NOTHING = new IndirectInput("NOTHING", 0,0,0,0,0,0,1,0,0,0,0);
+
+	public static final IndirectInput[] ACTIONS = new IndirectInput[] {
+			new IndirectInput("lACTION", 0,0,0,0,0,0,0,1,0,0,0),
+			new IndirectInput("rACTION", 0,0,0,0,0,0,0,0,1,0,0),
+			new IndirectInput("uACTION", 0,0,0,0,0,0,0,0,0,1,0),
+			new IndirectInput("dACTION", 0,0,0,0,0,0,0,0,0,0,1)
+	};
+	private static final int ACTION_CLASS = 2;
+	
 	private final Map<Node, IndirectInput> nodeMap = new HashMap<Node, IndirectInput>();
 	private final Map<NodePair, IndirectInput> relationMap = new HashMap<NodePair, IndirectInput>();
+	private final Map<Node, Map<IndirectInput, Node>> out2InNodeMap = new HashMap<Node, Map<IndirectInput, Node>>();
 	
 	/** 
 	 * produces an input vector to the CPPN based on the node and connection characteristics 
@@ -47,46 +64,47 @@ public class RelationManager {
 		mapNodesToGeoSpace(cols, rows, objClass, outputNodes, game.cols, game.rows);
 		
 		int numO = (int) Math.ceil(((double)inputNodes.size()) / (game.cols * game.rows));
-
-		IndirectInput right = new IndirectInput("right", 1,0,0,0,0,0);
-		IndirectInput left = new IndirectInput("left", 0,1,0,0,0,0,0);
-		IndirectInput above = new IndirectInput("above", 0,0,1,0,0,0,0);
-		IndirectInput below = new IndirectInput("below", 0,0,0,1,0,0,0);
-		IndirectInput same = new IndirectInput("same", 0,0,0,0,1,0);
-		IndirectInput collision = new IndirectInput("collision", 0,0,0,0,0,1,0);
-		IndirectInput nothing = new IndirectInput("nothing", 0,0,0,0,0,0,1);
 		
-		for (Node in : inputNodes) {
-			int inC = cols.get(in);
-			int inR = rows.get(in);
-			int inO = objClass.get(in);
-			result.nodeMap.put(in, new IndirectInput(inC+","+inR+":"+inO,
-					geoToVector(inC, game.cols, inR, game.cols, inO, numO)));
-			for (Node out : outputNodes) {
+		for (Node out : outputNodes) {
+			int outC = cols.get(out);
+			int outR = rows.get(out);
+			int outO = objClass.get(out);
+			result.nodeMap.put(out, new IndirectInput(outC+","+outR+","+outR,
+					geoToVector(outC, game.cols, outR, game.cols, outO, numO)));
+			Map<IndirectInput, Node> iiToNode = new HashMap<IndirectInput, Node>();
+			result.out2InNodeMap.put(out, iiToNode);
+			for (Node in : inputNodes) {
+				int inC = cols.get(in);
+				int inR = rows.get(in);
+				int inO = objClass.get(in);
 				NodePair pair = new NodePair(in, out);
-				IndirectInput rel = nothing;
-				int outC = cols.get(out);
-				int outR = rows.get(out);
-				int outO = objClass.get(out);
-				result.nodeMap.put(out, new IndirectInput(outC+","+outR+","+outR,
-						geoToVector(outC, game.cols, outR, game.cols, outO, numO)));
-				if (inC == outC && inR == outR) {
-					if (inO == outO) rel = same;
-					else rel = collision;
+				IndirectInput rel = NOTHING; // rel means out is REL of in
+				result.nodeMap.put(in, new IndirectInput(inC+","+inR+":"+inO,
+						geoToVector(inC, game.cols, inR, game.cols, inO, numO)));
+				if (inO == ACTION_CLASS) {
+					rel = ACTIONS[inC];
+				} else if (inC == outC && inR == outR) {
+					if (inO == outO) rel = SAME;
+					else rel = COLLISION;
 				} else if (inO == outO) {
 					if (inC == outC) {
-						if (outR == inR + 1) rel = below;
-						else if (outR == inR - 1) rel = above;
+						if (outR == inR + 1) rel = BELOW;
+						else if (outR == inR - 1) rel = ABOVE;
 					} else if (inR == outR) {
-						if (outC == inC + 1) rel = right;
-						else if (outC == inC - 1) rel = left;
+						if (outC == inC + 1) rel = RIGHT;
+						else if (outC == inC - 1) rel = LEFT;
 					}
 				}
-				// TODO handle actions more intelligently
 				result.relationMap.put(pair, rel);
+				if (rel != NOTHING) iiToNode.put(rel, in);
 			}
 		}
+		if (result.nodeMap.isEmpty()) throw new IllegalStateException("Empty Relation Manager Created");
 		return result;
+	}
+	
+	public Node getRelNode(Node n, IndirectInput rel) {
+		return out2InNodeMap.get(n).get(rel);
 	}
 	
 	private static double[] geoToVector(int c, int numC, int r, int numR, int o, int numO) {

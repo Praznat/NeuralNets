@@ -9,15 +9,20 @@ import reasoner.Planner;
 import modeler.*;
 
 public class GridExploreGame extends GridGame {
+	
+	public static final double[] LEFT = new double[] {1,0,0,0}; // LEFT
+	public static final double[] RIGHT = new double[] {0,1,0,0}; // RIGHT
+	public static final double[] UP = new double[] {0,0,1,0}; // UP
+	public static final double[] DOWN = new double[] {0,0,0,1}; // DOWN
 
 	private static final boolean WRAP = false;
 	public static EnvTranslator actionTranslator = new EnvTranslator() {
 		@Override
 		public double[] toNN(double... n) {
-			if (n[0] == -1.0) return new double[] {1,0,0,0};
-			if (n[0] == 1.0) return new double[] {0,1,0,0};
-			if (n[1] == -1.0) return new double[] {0,0,1,0};
-			if (n[1] == 1.0) return new double[] {0,0,0,1};
+			if (n[0] == -1.0) return LEFT;
+			if (n[0] == 1.0) return RIGHT;
+			if (n[1] == -1.0) return UP;
+			if (n[1] == 1.0) return DOWN;
 			else return new double[] {0,0,0,0};
 		}
 		@Override
@@ -31,10 +36,10 @@ public class GridExploreGame extends GridGame {
 	};
 	{
 		actionChoices.clear();
-		actionChoices.add(new double[] {1,0,0,0}); // LEFT
-		actionChoices.add(new double[] {0,1,0,0}); // RIGHT
-		actionChoices.add(new double[] {0,0,1,0}); // UP
-		actionChoices.add(new double[] {0,0,0,1}); // DOWN
+		actionChoices.add(LEFT); // LEFT
+		actionChoices.add(RIGHT); // RIGHT
+		actionChoices.add(UP); // UP
+		actionChoices.add(DOWN); // DOWN
 	}
 
 	final int[][] playerGrid; // 1 represents location of player, 0 otherwise

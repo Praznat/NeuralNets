@@ -126,6 +126,21 @@ public abstract class ModelLearner {
 		return experienceReplay;
 	}
 
+	public double[] newStateVars(double[] stateVars, double[] action, int jointAdjustments) {
+		observeAction(action);
+		observePreState(stateVars);
+		feedForward();
+		
+		Collection<? extends Node> outputs = getTransitionsModule().getNeuralNetwork().getOutputNodes();
+		double[] newStateVars = new double[stateVars.length];
+		int j = 0;
+		for (Node n : outputs) newStateVars[j++] = n.getActivation();
+		double[] allVars = ModelLearnerHeavy.concatVars(stateVars, action, newStateVars);
+		if (jointAdjustments > 0 && getFamiliarityModule() != null)
+			newStateVars = upJointOutput(allVars, allVars.length - newStateVars.length, jointAdjustments);
+		return newStateVars;
+	}
+
 //	public abstract double getFamiliarity(double[] allVars);
 //	public abstract double[] upFamiliarity(double[] allVars, int postLen, int jointAdjustments, int epochs,
 //			double lRate, double mRate, double sRate, double maxShift);

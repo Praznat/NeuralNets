@@ -20,6 +20,7 @@ import reasoner.Planner;
 import reasoner.RewardFunction;
 
 public abstract class GridGame {
+	public ModelLearnerHeavy modeler;
 	protected static JFrame frame = new JFrame();
 	protected static GridPanel gridPanel = new GridPanel(frame, 500);
 	protected static GridGameControlPanel controlPanel = new GridGameControlPanel(frame);
@@ -36,9 +37,12 @@ public abstract class GridGame {
 	public final List<double[]> actionChoices = new ArrayList<double[]>();
 	double[] chosenAction;
 	RewardFunction rewardFn;
+	boolean isPaused;
+	final Thread thread;
 	public GridGame(int rows, int cols) {
 		this.rows = rows;
 		this.cols = cols;
+		this.thread = Thread.currentThread();
 	}
 	protected static int getGridLoc(int col, int row, int[][] grid) {
 		int cols = grid.length;
@@ -75,6 +79,10 @@ public abstract class GridGame {
 	}
 	
 	public abstract double[] getState();
+	
+	public void convertFromState(double[] state) {
+		System.out.println("Error: Need to implement (override) GridGame.convertFromState");
+	}
 
 	public abstract void oneTurn();
 	
@@ -165,12 +173,24 @@ class GridPanel extends JPanel {
 class GridGameControlPanel extends JPanel implements ActionListener {
 	JFrame parent;
 	GridGame game;
+	JButton bL = new JButton("Predict-L");
+	JButton bR = new JButton("Predict-R");
+	JButton bU = new JButton("Predict-U");
+	JButton bD = new JButton("Predict-D");
 	JButton b1 = new JButton("Catch");
 	JButton b2 = new JButton("Evade");
 	public GridGameControlPanel(JFrame parent) {
 		this.parent = parent;
+		this.add(bL);
+		this.add(bR);
+		this.add(bU);
+		this.add(bD);
 		this.add(b1);
 		this.add(b2);
+		bL.addActionListener(this);
+		bR.addActionListener(this);
+		bU.addActionListener(this);
+		bD.addActionListener(this);
 		b1.addActionListener(this);
 		b2.addActionListener(this);
 	}
@@ -180,10 +200,31 @@ class GridGameControlPanel extends JPanel implements ActionListener {
 	}
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if (e.getActionCommand().equals("Catch")) {
+		final String command = e.getActionCommand();
+		if (command.startsWith("Predict")) {
+			int joints = 3;
+			double[] state = game.getState();
+			double[] action = null;
+			if (command.equals("Predict-L")) {
+				action = GridExploreGame.LEFT;
+			} else if (command.equals("Predict-R")) {
+				action = GridExploreGame.RIGHT;
+			} else if (command.equals("Predict-U")) {
+				action = GridExploreGame.UP;
+			} else if (command.equals("Predict-D")) {
+				action = GridExploreGame.DOWN;
+			}
+			double[] newStateVars = game.modeler.newStateVars(state, action, joints);
+//			System.out.println(Utils.stringArray(newStateVars, 2));
+			game.convertFromState(newStateVars);
+			parent.repaint();
+//			game.convertFromState(state);
+//			repaint();
+		}
+		else if (command.equals("Catch")) {
 			game.setRewardFunction(GridTagGame.follow(game));
 		}
-		else if (e.getActionCommand().equals("Evade")) {
+		else if (command.equals("Evade")) {
 			game.setRewardFunction(GridTagGame.evade(game));
 		}
 	}

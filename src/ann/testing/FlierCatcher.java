@@ -36,7 +36,6 @@ public class FlierCatcher extends GridExploreGame {
 	};
 	private static final String SAVE_NAME = "FlyCells";
 	private final int[][] opponentGrid;
-	public ModelLearnerHeavy modeler;
 	private boolean endSwitch = true;
 	private boolean haveEnemies = true;
 	private double spawnFreq = 0.35;
@@ -91,7 +90,7 @@ public class FlierCatcher extends GridExploreGame {
 	private static double skewFactor = 0.1;
 	private static double discRate = 0.2;
 	private static double confusion = 0.1;
-	private static int epochs = 500;
+	private static int epochs = 50;
 	private static boolean useRollouts = true;
 	public static int repaintMs = 1;
 	private static FlierCatcher game;
@@ -137,11 +136,13 @@ public class FlierCatcher extends GridExploreGame {
 	}
 	private static void testScratch() {
 		int turns = 2000;
-		int learnIterations = 50;
+		int learnIterations = 500;
 		FlierCatcher game = new FlierCatcher(size);
-		game.modeler = new ModelLearnerHeavy(500, new int[] {}, null, null, ActivationFunction.SIGMOID0p5, epochs);
+//		game.actionChoices.remove(1);
+//		game.actionChoices.remove(0);
+		game.modeler = new ModelLearnerHeavy(500, new int[] {size*size*2}, null, null, ActivationFunction.SIGMOID0p5, turns);
 		trainModeler(game.modeler, turns, game, repaintMs, game.actionChoices, actionTranslator);
-		game.modeler.learnFromMemory(0.9, 0.5, 0, false, learnIterations, 10000);
+		game.modeler.learnFromMemory(0.3, 0.5, 0, false, learnIterations, 10000);
 		repaintMs = 70;
 		play(game.modeler, game, epochs, numSteps, numRuns, joints, skewFactor, discRate);
 	}
@@ -162,6 +163,11 @@ public class FlierCatcher extends GridExploreGame {
 	
 	public double getWinRate() {
 		return (eats + 0.0) / (eats + misses);
+	}
+	
+	public void clearWinRate() {
+		eats = 0;
+		misses = 0;
 	}
 	
 	private static ArrayList<Double> playUsingSandwichedTarget(String targetNet, boolean randomizeTarget,
@@ -221,10 +227,15 @@ public class FlierCatcher extends GridExploreGame {
 			modeler.observePreState(preState);
 			modeler.observeAction(actionNN);
 			game.move(actionTranslator.fromNN(actionNN), true);
-			System.out.println(i + "	" + game.eats + "	" + game.misses);
+			if (repaintMs > 0) System.out.println(i + "	" + game.eats + "	" + game.misses);
 			modeler.observePostState(game.getState());
 			modeler.saveMemory(); //game.modeler.learnOnline(1.5, 0.5, 0);
 			try {
+				synchronized (game.thread) {
+					while (game.isPaused) {
+						game.thread.wait();
+					}
+				}
 				long elapsedMs = System.currentTimeMillis() - startMs;
 				Thread.sleep(Math.max(0, repaintMs - elapsedMs));
 			} catch (InterruptedException e) {
@@ -323,6 +334,18 @@ public class FlierCatcher extends GridExploreGame {
 	@Override
 	protected boolean showSmell() {
 		return false;
+	}
+	
+	@Override
+	public void convertFromState(double[] state) {
+		for (int r = 0; r < rows; r++) {
+			for (int c = 0; c < cols; c++) playerGrid[c][r] = (int) Math.round(state[c + r*cols]);
+		}
+		if (!haveEnemies) return;
+		final int k = rows * cols;
+		for (int r = 0; r < rows; r++) {
+			for (int c = 0; c < cols; c++) opponentGrid[c][r] = (int)Math.round(state[k + c + r*cols]);
+		}
 	}
 
 	@Override

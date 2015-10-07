@@ -26,13 +26,11 @@ public class ModuleDisplayer implements MouseListener {
 	private double[][] inOutAbsConnWgt;
 	private double maxWeight;
 	private int[][] grids;
-	private int actGrid;
 	private int numVars;
 	private int gUnit = 35;
 	private Map<Point, Integer> centerToVar = new HashMap<Point, Integer>();
 
 	public ModuleDisplayer(ModelLearner modeler, final int actGrid, final int[]... grids) {
-		this.actGrid = actGrid;
 		this.grids = grids;
 		this.numVars = countVars();
 		this.modeler = modeler;

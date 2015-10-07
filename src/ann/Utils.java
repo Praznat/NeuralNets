@@ -6,6 +6,7 @@ import java.util.*;
 
 import modeler.ModelLearner;
 import modeler.ModelLearnerHeavy;
+import modeler.ModelerModule;
 
 
 public class Utils {
@@ -162,7 +163,8 @@ public class Utils {
 	public static void saveModelerToFile(String namey, ModelLearner modeler) {
 		if (namey.isEmpty()) return;
 		saveNetworkToFile(namey+"P", modeler.getTransitionsModule().getNeuralNetwork());
-		saveNetworkToFile(namey+"C", modeler.getFamiliarityModule().getNeuralNetwork());
+		ModelerModule conditioner = modeler.getFamiliarityModule();
+		if (conditioner != null) saveNetworkToFile(namey+"C", modeler.getFamiliarityModule().getNeuralNetwork());
 	}
 	
 	/**

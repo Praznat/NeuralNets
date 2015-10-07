@@ -38,4 +38,20 @@ public class TransferTestUtils {
 		for (double d : ds) result += Math.pow(d - mean, 2);
 		return Math.sqrt(result / ds.size());
 	}
+	
+	public static void compareTwoModelers(FlierCatcher game, int epochs, ModelLearnerHeavy modeler1, ModelLearnerHeavy modeler2,
+			boolean fastForward) {
+		FlierCatcher.repaintMs = fastForward ? -1 : 50;
+		int numSteps = 3;
+		int numRuns = 5;
+		int joints = 1;
+		double skewFactor = 0.1;
+		double discRate = 0.2;
+		FlierCatcher.play(modeler1, game, epochs, numSteps, numRuns, joints, skewFactor, discRate);
+		final double wr1 = game.getWinRate();
+		game.clearWinRate();
+		FlierCatcher.play(modeler2, game, epochs, numSteps, numRuns, joints, skewFactor, discRate);
+		final double wr2 = game.getWinRate();
+		System.out.println(wr1 + "	vs	" + wr2);
+	}
 }

@@ -20,10 +20,16 @@ public class ModelLearnerHeavy extends ModelLearner {
 //	private final TransitionFamiliarityAssessor modelTFA;
 	private final VariableTransitionApproximator modelVTA;
 	private final JointDistributionModeler modelJDM;
+	public final int errorHalfLife;
+	public final ActivationFunction actFn;
+	public final int maxReplaySize;
 	
 	public ModelLearnerHeavy(int errorHalfLife, int[] numHiddenVTA, int[] numHiddenTRA, int[] numHiddenJDM,
 			ActivationFunction actFn, int maxReplaySize) {
 		super(maxReplaySize);
+		this.errorHalfLife = errorHalfLife;
+		this.actFn = actFn;
+		this.maxReplaySize = maxReplaySize;
 		modelVTA = new VariableTransitionApproximator(actFn, numHiddenVTA, errorHalfLife);
 //		modelTFA = new TransitionFamiliarityAssessor(actFn, numHiddenTRA, errorHalfLife);
 		modelJDM = numHiddenJDM != null ? new JointDistributionModeler(actFn, numHiddenJDM, errorHalfLife) : null;
@@ -75,7 +81,7 @@ public class ModelLearnerHeavy extends ModelLearner {
 //			FFNeuralNetwork.feedForward(getModelJDM().getNeuralNetwork().getInputNodes(), tm.getAllVars());
 //		}
 	}
-
+	
 	@Override
 	public double[] upJointOutput(double[] vars, int postStateIndex, int rounds) {
 		if (modelJDM == null) return vars;

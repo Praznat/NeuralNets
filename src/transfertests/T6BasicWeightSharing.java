@@ -41,11 +41,14 @@ public class T6BasicWeightSharing {
 		FlierCatcher.play((ModelLearnerHeavy)model, game, epochs, numSteps, numRuns, joints, skewFactor, discRate);		
 		ModuleDisplayer moduleDisplayer = new ModuleDisplayer(model, 2, gridSpec, gridSpec, new int[] {4, 1});
 	}
-	
-	static ModelLearner createModelerWithWgtSharing(String saveName, FlierCatcher game) {
-		HardWeightSharing hws = null;//new HardWeightSharing(new double[] {-.5, 0, .5}, 8, 0.9, 0.5, 0);
-		game.modeler = new ModelLearnerHeavy(500, new int[] {}, null, null, ActivationFunction.SIGMOID0p5, trainTurns);
-		FlierCatcher.trainModeler(game.modeler, learnIterations, game, 0, game.actionChoices, GridExploreGame.actionTranslator);
+
+	static ModelLearnerHeavy createModelerWithWgtSharing(String saveName, FlierCatcher game) {
+		return createModelerWithWgtSharing(saveName, game, trainTurns, false);
+	}
+	static ModelLearnerHeavy createModelerWithWgtSharing(String saveName, FlierCatcher game, int turns, boolean actuallyDontWgtShare) {
+		HardWeightSharing hws = actuallyDontWgtShare ? null : new HardWeightSharing(new double[] {-.5, 0, .5}, 8, 0.9, 0.5, 0);
+		game.modeler = new ModelLearnerHeavy(500, new int[] {size*size*2}, null, null, ActivationFunction.SIGMOID0p5, turns);
+		FlierCatcher.trainModeler(game.modeler, turns, game, 0, game.actionChoices, GridExploreGame.actionTranslator);
 		game.modeler.getModelVTA().setWgtSharer(hws);
 		return game.modeler;
 	}

@@ -14,6 +14,10 @@ public class ExperienceReplay<T extends ExperienceReplay.Memory> {
 	public ExperienceReplay(int maxSize, boolean overwriteCopies) {
 		this.maxSize = maxSize;
 	}
+
+	public void addExperience(ExperienceReplay<T> other) {
+		for (T t : other.dataMemory) addMemory(t);
+	}
 	
 	public void addMemory(T dp) {
 		dataMemory.add(dp);

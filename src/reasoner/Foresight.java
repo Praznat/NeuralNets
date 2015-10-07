@@ -35,11 +35,8 @@ public class Foresight {
 
 				double[] action = i == 0 || actionChoices == null ? firstAction : actionChoices.get(r % actionChoices.size());
 //				double[] action = i == 0 || actionChoices == null ? firstAction : RandomUtils.randomOf(actionChoices);
-				modeler.observeAction(action);
-				modeler.observePreState(stateVars);
-				modeler.feedForward();
-				// TODO move collections out of loop
-				double[] newStateVars = newStateVars(modeler, stateVars, action, jointAdjustments);
+
+				double[] newStateVars = modeler.newStateVars(stateVars, action, jointAdjustments);
 //				newStateVars = modeler.upFamiliarity(allVars, newStateVars.length, jointAdjustments,
 //						jointAdjustments, 2.5, .5, 0, 0.1); // <- hacky!
 				realism = 1; //modeler.getFamiliarity(allVars); // assumes same action held
@@ -60,20 +57,20 @@ public class Foresight {
 		modeler.observePreState(stateVars);
 		modeler.feedForward();
 		modeler.clearWorkingMemory();
-		double[] newStateVars = newStateVars(modeler, stateVars, action, jointAdjustments);
+		double[] newStateVars = modeler.newStateVars(stateVars, action, jointAdjustments);
 		return estimateCertainty(newStateVars) > certaintyThreshold;
 	}
 	
-	private static double[] newStateVars(ModelLearner modeler, double[] stateVars, double[] action, int jointAdjustments) {
-		Collection<? extends Node> outputs = modeler.getTransitionsModule().getNeuralNetwork().getOutputNodes();
-		double[] newStateVars = new double[stateVars.length];
-		int j = 0;
-		for (Node n : outputs) newStateVars[j++] = n.getActivation();
-		double[] allVars = ModelLearnerHeavy.concatVars(stateVars, action, newStateVars);
-		if (jointAdjustments > 0 && modeler.getFamiliarityModule() != null)
-			newStateVars = modeler.upJointOutput(allVars, allVars.length - newStateVars.length, jointAdjustments);
-		return newStateVars;
-	}
+//	private static double[] newStateVars(ModelLearner modeler, double[] stateVars, double[] action, int jointAdjustments) {
+//		Collection<? extends Node> outputs = modeler.getTransitionsModule().getNeuralNetwork().getOutputNodes();
+//		double[] newStateVars = new double[stateVars.length];
+//		int j = 0;
+//		for (Node n : outputs) newStateVars[j++] = n.getActivation();
+//		double[] allVars = ModelLearnerHeavy.concatVars(stateVars, action, newStateVars);
+//		if (jointAdjustments > 0 && modeler.getFamiliarityModule() != null)
+//			newStateVars = modeler.upJointOutput(allVars, allVars.length - newStateVars.length, jointAdjustments);
+//		return newStateVars;
+//	}
 	
 	public static void terraIncognita(ModelLearner modeler, double[] initialStateVars, double[] firstAction,
 			List<double[]> actionChoices, MultiRewardAssessment mra, int numSteps, int numRuns, int jointAdjustments, double skewFactor) {

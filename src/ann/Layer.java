@@ -38,7 +38,7 @@ public class Layer<N extends Node> implements Serializable {
 	}
 
 	@SuppressWarnings("unchecked")
-	protected void addNode(Node n) {
+	public void addNode(Node n) {
 		getNodes().add((N) n);
 	}
 
