@@ -55,7 +55,7 @@ public class GridExploreGame extends GridGame {
 		walls = new int[cols][rows];
 		smell = new double[cols][rows];
 		setPos(0,0,playerPos,playerGrid,false,false);
-		gUnit = (int) Math.sqrt(cols*rows) * 20;
+		gUnit = (int) (20 / Math.sqrt(cols*rows) * 20);
 	}
 
 	public static void main(String[] args) {

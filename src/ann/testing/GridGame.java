@@ -22,8 +22,8 @@ import reasoner.RewardFunction;
 public abstract class GridGame {
 	public ModelLearnerHeavy modeler;
 	protected static JFrame frame = new JFrame();
-	protected static GridPanel gridPanel = new GridPanel(frame, 500);
-	protected static GridGameControlPanel controlPanel = new GridGameControlPanel(frame);
+	public static GridPanel gridPanel = new GridPanel(frame, 500);
+	public static GridGameControlPanel controlPanel = new GridGameControlPanel(frame);
 	static {
 		frame.setLayout(new GridLayout(0,2));
 		frame.add(gridPanel);
@@ -164,7 +164,7 @@ class GridPanel extends JPanel {
 		if (game == null) return new Dimension(0, 0);
 		return new Dimension(gUnit, gUnit);
 	}
-	void setGame(GridGame game) {
+	public void setGame(GridGame game) {
 		this.game = game;
 		parent.pack();
 	}
@@ -194,7 +194,7 @@ class GridGameControlPanel extends JPanel implements ActionListener {
 		b1.addActionListener(this);
 		b2.addActionListener(this);
 	}
-	void setGame(GridGame game) {
+	public void setGame(GridGame game) {
 		this.game = game;
 		parent.pack();
 	}

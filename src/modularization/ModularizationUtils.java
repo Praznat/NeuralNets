@@ -1,6 +1,7 @@
 package modularization;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -13,9 +14,69 @@ import ann.FFNeuralNetwork;
 import ann.Layer;
 import ann.Node;
 import ann.Node.Factory;
+import ann.indirectencodings.IndirectInput;
+import ann.indirectencodings.RelationManager;
 
-public class NeuralNetSegment {
+public class ModularizationUtils {
+	
+	/**
+	 * reinitialize internal structure of a given ann, only creating connections
+	 * between inputs and outputs with relationships specified by relMngr,
+	 * with a single layer of hidden nodes of size numHidden between each output
+	 * and its related set of inputs
+	 * @param ann
+	 * @param relMngr
+	 * @param numHidden
+	 */
+	public static void initializeANNOnlyConnectingRelatedVars(FFNeuralNetwork ann,
+			RelationManager relMngr, int[] hiddenPerOutput) {
+		ArrayList<? extends Node> inputs = ann.getInputNodes();
+		ArrayList<? extends Node> outputs = ann.getOutputNodes();
+		for (Node n : inputs) n.getOutputConnections().clear();
+		for (Node n : outputs) n.getInputConnections().clear();
+		LinkedList<Layer<? extends Node>> layers = ann.getLayers();
+		int numLayers = ann.getNumLayers();
+		for (int i = numLayers - 2; i >= 1; i--) layers.remove(i);
+		ActivationFunction actFn = inputs.get(0).getActivationFunction();
+		for (int i = 0; i < hiddenPerOutput.length; i++) {
+			layers.add(i+1, Layer.create(i+1, actFn, ann.nodeFactory));
+		}
+		for (Node output : outputs) {
+			for (Node input : inputs) {
+				IndirectInput rel = relMngr.getRel(input, output);
+				if (RelationManager.USED_RELS.contains(rel)) {
+					Collection<Node> lastNodes = new ArrayList<Node>();
+					lastNodes.add(input);
+					for (int h = 0; h < hiddenPerOutput.length; h++) {
+						final int hidden = hiddenPerOutput[h];
+						Layer<? extends Node> layer = layers.get(h+1);
+						Collection<Node> newNodes = new ArrayList<Node>();
+						for (int i = 0; i < hidden; i++) {
+							Node n = ann.nodeFactory.create(actFn, layer, String.valueOf(i));
+							layer.addNode(n);
+							newNodes.add(n);
+						}
+						Layer.fullyConnect(lastNodes, newNodes);
+						BiasNode.connectToLayer(layer);
+						lastNodes.clear();
+						lastNodes.addAll(layer.getNodes());
+					}
+					Collection<Node> outputColl = new ArrayList<Node>();
+					outputColl.add(output);
+					Layer.fullyConnect(lastNodes, outputColl);
+				}
+			}
+		}
+	}
 
+	/**
+	 * returns new neural network with new nodes and connections having same structure
+	 * and weights as original network but only between given includedInputs and includedOutput
+	 * @param original
+	 * @param includedOutput
+	 * @param includedInputs
+	 * @return
+	 */
 	public static FFNeuralNetwork createNNSegment(FFNeuralNetwork original,
 		Node includedOutput, ArrayList<Node> includedInputs) {
 		

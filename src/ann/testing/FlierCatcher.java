@@ -383,4 +383,8 @@ public class FlierCatcher extends GridExploreGame {
 	public void setSpawnFreq(double spawnFreq) {
 		this.spawnFreq = spawnFreq;
 	}
+
+	public void toggleRotation() {
+		this.playerMoveVertNotHorz = !playerMoveVertNotHorz;
+	}
 }

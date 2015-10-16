@@ -171,7 +171,7 @@ public class Utils {
 	 * name of stored modeler and new maximum experience size
 	 */
 	public static ModelLearnerHeavy loadModelerFromFile(String namey, int experienceSize) {
-		if (namey.isEmpty()) return null;
+		if (namey == null || namey.isEmpty()) return null;
 		FFNeuralNetwork storedP = Utils.loadNetworkFromFile(namey+"P");
 		FFNeuralNetwork storedC = Utils.loadNetworkFromFile(namey+"C");
 		if (storedP == null || storedC == null) {

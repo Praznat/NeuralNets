@@ -1,6 +1,7 @@
 package ann.indirectencodings;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,6 +28,18 @@ public class RelationManager {
 			new IndirectInput("uACTION", 0,0,0,0,0,0,0,0,0,1,0),
 			new IndirectInput("dACTION", 0,0,0,0,0,0,0,0,0,0,1)
 	};
+	
+	public static final Collection<IndirectInput> USED_RELS = new ArrayList<IndirectInput>();
+	static {
+		USED_RELS.add(RelationManager.ABOVE);
+		USED_RELS.add(RelationManager.BELOW);
+		USED_RELS.add(RelationManager.RIGHT);
+		USED_RELS.add(RelationManager.LEFT);
+		USED_RELS.add(RelationManager.SAME);
+		USED_RELS.add(RelationManager.COLLISION);
+		for (IndirectInput rel : RelationManager.ACTIONS) USED_RELS.add(rel);
+	};
+	
 	private static final int ACTION_CLASS = 2;
 	
 	private final Map<Node, IndirectInput> nodeMap = new HashMap<Node, IndirectInput>();
@@ -105,6 +118,10 @@ public class RelationManager {
 	
 	public Node getRelNode(Node n, IndirectInput rel) {
 		return out2InNodeMap.get(n).get(rel);
+	}
+	
+	public IndirectInput getRel(Node inNode, Node outNode) {
+		return relationMap.get(new NodePair(inNode, outNode));
 	}
 	
 	private static double[] geoToVector(int c, int numC, int r, int numR, int o, int numO) {

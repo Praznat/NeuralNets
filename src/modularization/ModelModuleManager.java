@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import ann.FFNeuralNetwork;
@@ -22,9 +23,10 @@ public class ModelModuleManager {
 	private final GridGame game;
 	private final Map<Node, ReusableModule> nodeModules = new HashMap<Node, ReusableModule>();
 	private final Set<ModelLearner> modelersSeen = new HashSet<ModelLearner>();
-
+	
 	private double loErrorThresh = 0.1;
 	private double hiErrorThresh = 0.4;
+	private TreeSet<OutputError> outputErrors = new TreeSet<OutputError>();
 
 	public ModelModuleManager(GridGame game) {
 		this.game = game;
@@ -90,28 +92,34 @@ public class ModelModuleManager {
 			}
 		}
 		int n = transitions.size();
-		for (int i = 0; i < errors.length; i++) errors[i] /= n;
-		respondToErrors(errors, modeler, relMngr, outputNodes, transitions);
-	}
-	
-	private void respondToErrors(double[] errors, ModelLearner modeler, RelationManager relMngr,
-			ArrayList<? extends Node> outputs, Collection<TransitionMemory> transitions) {
+		outputErrors.clear();
 		for (int i = 0; i < errors.length; i++) {
-			final double error = errors[i];
-			Node output = outputs.get(i);
+			outputErrors.add(new OutputError(outputNodes.get(i), errors[i] / n + (Math.random()-.5)/1000000, i));
+		}
+		respondToErrors(outputErrors, modeler, relMngr, transitions);
+	}
+
+	private void respondToErrors(TreeSet<OutputError> outputErrors, ModelLearner modeler,
+			RelationManager relMngr, Collection<TransitionMemory> transitions) {
+		for (OutputError outputError : outputErrors) {
+			final double error = outputError.error;
+			final Node output = outputError.output;
+			final int i = outputError.key;
+			System.out.println(output + "	" + error);
 			if (error < loErrorThresh) {
 				// dont worry if it already has module
 				if (nodeModules.get(output) != null) continue;
 				// pick best existing module
-				ReusableModule bestModule = pickModule(modeler, relMngr, output, i, transitions, loErrorThresh);
+				ReusableModule bestModule = pickModule(modeler, relMngr, output, i, transitions, error);
 				if (bestModule != null) nodeModules.put(output, bestModule);
 				// create new module if no existing ones work
 				else {
+					System.out.println("new module created for " + output);
 					ReusableModule module = ReusableModule.createNeighborHoodModule(game, modeler, relMngr,
 							getModelNetwork(modeler), output);
 					nodeModules.put(output, module);
 				}
-			} else if (error > hiErrorThresh) {
+			} else if (error < hiErrorThresh) {
 				// pick best module if lower than current error
 				ReusableModule bestModule = pickModule(modeler, relMngr, output, i, transitions, error);
 				if (bestModule != null) nodeModules.put(output, bestModule);
@@ -171,16 +179,33 @@ public class ModelModuleManager {
 		Set<ReusableModule> allModules = new HashSet<ReusableModule>();
 		allModules.addAll(nodeModules.values());
 		System.out.println(allModules.size() + " modules total");
-		TreeSet<Node> ordered = new TreeSet<Node>(new Comparator<Node>() {
+		TreeSet<OutputError> ordered = new TreeSet<OutputError>(new Comparator<OutputError>() {
 			@Override
-			public int compare(Node arg0, Node arg1) {
-				return arg0.toString().compareTo(arg1.toString());
+			public int compare(OutputError arg0, OutputError arg1) {
+				return arg0.output.toString().compareTo(arg1.output.toString());
 			}
 		});
-		ordered.addAll(nodeModules.keySet());
-		for (Node n : ordered) {
-			System.out.println(n + "	" + nodeModules.get(n));
+		ordered.addAll(outputErrors);
+		for (OutputError n : ordered) {
+			System.out.println(n.output + "	" + nodeModules.get(n.output) + "	err:	" + n.error);
 		}
+	}
+	
+	private static class OutputError implements Comparable<OutputError> {
 		
+		private Node output;
+		private double error;
+		private int key;
+
+		public OutputError(Node output, double error, int key) {
+			this.output = output;
+			this.error = error;
+			this.key = key;
+		}
+
+		@Override
+		public int compareTo(OutputError o) {
+			return Double.compare(this.error, o.error);
+		}
 	}
 }

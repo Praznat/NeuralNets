@@ -33,13 +33,7 @@ public class ReusableModule {
 	public static ReusableModule createNeighborHoodModule(GridGame game, ModelLearner modeler,
 			RelationManager relMngr, FFNeuralNetwork fullModelNN, Node outputOfInterest) {
 		ReusableModule result = new ReusableModule();
-		result.relations.add(RelationManager.ABOVE);
-		result.relations.add(RelationManager.BELOW);
-		result.relations.add(RelationManager.RIGHT);
-		result.relations.add(RelationManager.LEFT);
-		result.relations.add(RelationManager.SAME);
-		result.relations.add(RelationManager.COLLISION);
-		for (IndirectInput rel : RelationManager.ACTIONS) result.relations.add(rel);
+		result.relations.addAll(RelationManager.USED_RELS);
 		result.setModuleNN(fullModelNN, outputOfInterest, relMngr);
 		return result;
 	}
@@ -49,7 +43,7 @@ public class ReusableModule {
 	 */
 	private void setModuleNN(FFNeuralNetwork fullModelNN, Node outputOfInterest, RelationManager relMngr) {
 		ArrayList<Node> inputsOfInterest = getRelNodes(outputOfInterest, relMngr);
-		neuralNet = NeuralNetSegment.createNNSegment(fullModelNN, outputOfInterest, inputsOfInterest);
+		neuralNet = ModularizationUtils.createNNSegment(fullModelNN, outputOfInterest, inputsOfInterest);
 		if (rel2ModuleNode.isEmpty()) {
 			ArrayList<? extends Node> inputNodes = neuralNet.getInputNodes();
 			int i = 0;

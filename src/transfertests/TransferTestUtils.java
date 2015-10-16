@@ -39,7 +39,7 @@ public class TransferTestUtils {
 		return Math.sqrt(result / ds.size());
 	}
 	
-	public static void compareTwoModelers(FlierCatcher game, int epochs, ModelLearnerHeavy modeler1, ModelLearnerHeavy modeler2,
+	public static double compareTwoModelers(FlierCatcher game, int epochs, ModelLearnerHeavy modeler1, ModelLearnerHeavy modeler2,
 			boolean fastForward) {
 		FlierCatcher.repaintMs = fastForward ? -1 : 50;
 		int numSteps = 3;
@@ -53,5 +53,6 @@ public class TransferTestUtils {
 		FlierCatcher.play(modeler2, game, epochs, numSteps, numRuns, joints, skewFactor, discRate);
 		final double wr2 = game.getWinRate();
 		System.out.println(wr1 + "	vs	" + wr2);
+		return wr2 - wr1;
 	}
 }
