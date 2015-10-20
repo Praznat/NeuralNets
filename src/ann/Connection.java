@@ -68,5 +68,10 @@ public class Connection implements Serializable {
 		}
 		return result;
 	}
+
+	public void disconnect() {
+		this.inputNode.getOutputConnections().remove(this);
+		this.outputNode.getInputConnections().remove(this);
+	}
 	
 }

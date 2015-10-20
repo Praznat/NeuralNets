@@ -88,4 +88,8 @@ public class ReusableModule {
 		}
 		return sb.toString();
 	}
+
+	public FFNeuralNetwork getNeuralNet() {
+		return neuralNet;
+	}
 }

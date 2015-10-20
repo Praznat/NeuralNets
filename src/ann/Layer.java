@@ -10,9 +10,9 @@ public class Layer<N extends Node> implements Serializable {
 	private final ArrayList<N> nodes = new ArrayList<N>();
 	private String name = "";
 	
-	public static Layer<Node> create(int n, ActivationFunction actFn, Factory<? extends Node> nodeFactory) {
+	public static Layer<Node> create(int numNodes, ActivationFunction actFn, Factory<? extends Node> nodeFactory) {
 		Layer<Node> result = new Layer<Node>();
-		for (int i = 0; i < n; i++) result.addNode(nodeFactory.create(actFn, result, String.valueOf(i)));
+		for (int i = 0; i < numNodes; i++) result.addNode(nodeFactory.create(actFn, result, String.valueOf(i)));
 		return result;
 	}
 	public static Layer<Node> createInputLayer(int n, Node.Factory<? extends Node> nodeFactory) {

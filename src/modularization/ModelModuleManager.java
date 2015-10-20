@@ -105,7 +105,7 @@ public class ModelModuleManager {
 			final double error = outputError.error;
 			final Node output = outputError.output;
 			final int i = outputError.key;
-			System.out.println(output + "	" + error);
+//			System.out.println(output + "	" + error);
 			if (error < loErrorThresh) {
 				// dont worry if it already has module
 				if (nodeModules.get(output) != null) continue;
@@ -114,7 +114,7 @@ public class ModelModuleManager {
 				if (bestModule != null) nodeModules.put(output, bestModule);
 				// create new module if no existing ones work
 				else {
-					System.out.println("new module created for " + output);
+//					System.out.println("new module created for " + output);
 					ReusableModule module = ReusableModule.createNeighborHoodModule(game, modeler, relMngr,
 							getModelNetwork(modeler), output);
 					nodeModules.put(output, module);
@@ -149,6 +149,10 @@ public class ModelModuleManager {
 			}
 		}
 		return best;
+	}
+	
+	public ReusableModule getModuleUsedBy(Node output) {
+		return nodeModules.get(output);
 	}
 	
 	private double calcErrorFromTransition(ReusableModule module, RelationManager relMngr, TransitionMemory tm,

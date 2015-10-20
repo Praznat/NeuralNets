@@ -33,39 +33,44 @@ public class ModularizationUtils {
 		ArrayList<? extends Node> inputs = ann.getInputNodes();
 		ArrayList<? extends Node> outputs = ann.getOutputNodes();
 		for (Node n : inputs) n.getOutputConnections().clear();
-		for (Node n : outputs) n.getInputConnections().clear();
+		for (Node n : outputs) {
+			n.getInputConnections().clear();
+			BiasNode.disconnectFrom(n);
+		}
 		LinkedList<Layer<? extends Node>> layers = ann.getLayers();
 		int numLayers = ann.getNumLayers();
-		for (int i = numLayers - 2; i >= 1; i--) layers.remove(i);
+		for (int i = numLayers - 2; i >= 1; i--) {
+			Layer<? extends Node> removed = layers.remove(i);
+			for (Node n : removed.getNodes()) BiasNode.disconnectFrom(n);
+		}
 		ActivationFunction actFn = inputs.get(0).getActivationFunction();
 		for (int i = 0; i < hiddenPerOutput.length; i++) {
-			layers.add(i+1, Layer.create(i+1, actFn, ann.nodeFactory));
+			layers.add(i+1, Layer.create(0, actFn, ann.nodeFactory));
 		}
 		for (Node output : outputs) {
+			Collection<Node> outputColl = new ArrayList<Node>();
+			outputColl.add(output);
+			BiasNode.connectToNode(output);
+			Collection<Node> lastNodes = new ArrayList<Node>();
 			for (Node input : inputs) {
 				IndirectInput rel = relMngr.getRel(input, output);
-				if (RelationManager.USED_RELS.contains(rel)) {
-					Collection<Node> lastNodes = new ArrayList<Node>();
-					lastNodes.add(input);
-					for (int h = 0; h < hiddenPerOutput.length; h++) {
-						final int hidden = hiddenPerOutput[h];
-						Layer<? extends Node> layer = layers.get(h+1);
-						Collection<Node> newNodes = new ArrayList<Node>();
-						for (int i = 0; i < hidden; i++) {
-							Node n = ann.nodeFactory.create(actFn, layer, String.valueOf(i));
-							layer.addNode(n);
-							newNodes.add(n);
-						}
-						Layer.fullyConnect(lastNodes, newNodes);
-						BiasNode.connectToLayer(layer);
-						lastNodes.clear();
-						lastNodes.addAll(layer.getNodes());
-					}
-					Collection<Node> outputColl = new ArrayList<Node>();
-					outputColl.add(output);
-					Layer.fullyConnect(lastNodes, outputColl);
-				}
+				if (RelationManager.USED_RELS.contains(rel)) lastNodes.add(input);
 			}
+			for (int h = 0; h < hiddenPerOutput.length; h++) {
+				final int hidden = hiddenPerOutput[h];
+				Layer<? extends Node> layer = layers.get(h+1);
+				Collection<Node> newNodes = new ArrayList<Node>();
+				for (int i = 0; i < hidden; i++) {
+					Node n = ann.nodeFactory.create(actFn, layer, String.valueOf(i));
+					layer.addNode(n);
+					newNodes.add(n);
+					BiasNode.connectToNode(n);
+				}
+				Layer.fullyConnect(lastNodes, newNodes);
+				lastNodes.clear();
+				lastNodes.addAll(newNodes);
+			}
+			Layer.fullyConnect(lastNodes, outputColl);
 		}
 	}
 

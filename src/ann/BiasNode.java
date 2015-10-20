@@ -26,7 +26,7 @@ public class BiasNode {
 		Connection conn = weight == null ? Connection.getOrCreate(INSTANCE, node)
 				: Connection.getOrCreate(INSTANCE, node, weight);
 		toNodesMap.put(node, conn);
-		if (toNodesMap.size() > 500) {
+		if (toNodesMap.size() > 2000) {
 			System.out.println("MEMORY LEAK WARNING! Clear biases please!");
 		}
 	}
@@ -34,6 +34,13 @@ public class BiasNode {
 	public static void clearConnections() {
 		INSTANCE.getOutputConnections().clear();
 		toNodesMap.clear();
+	}
+	
+	public static void disconnectFrom(Node n) {
+		for (Iterator<Connection> iter = INSTANCE.getOutputConnections().iterator(); iter.hasNext();) {
+			Connection conn = iter.next();
+			if (conn.getOutputNode() == n) iter.remove();
+		}
 	}
 	
 	public static Connection getBiasConnection(Node n) {

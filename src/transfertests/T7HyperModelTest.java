@@ -1,21 +1,26 @@
 package transfertests;
 
 import ann.BiasNode;
+import ann.Node;
 import ann.indirectencodings.RelationManager;
 import ann.testing.FlierCatcher;
 import modeler.ModelLearner;
 import modeler.ModelLearnerHeavy;
 import modeler.ModelLearnerModular;
 import modularization.ModelModuleManager;
+import modularization.ReusableModule;
 
 public class T7HyperModelTest {
-	static int size = 4;
+	static int size = 5;
 	static int trainTurns = 1000;
 	static int learnIterations = 100;
 	
 	public static void main(String[] args) {
 //		testModules();
-		sanityCheck();
+//		sanityCheck();
+//		testTransferGridSize(new StringBuilder(), 50, 4);
+		testABunch();
+		
 //		StringBuilder result = new StringBuilder();
 //		testCatcherOnlyToFliers(result, 1000, 1);
 //		System.out.println(result);
@@ -25,16 +30,21 @@ public class T7HyperModelTest {
 		StringBuilder result = new StringBuilder();
 		for (int ss : new int[] {25, 50, 75, 100, 200, 500, 1000}) {
 			result.append("sample size:	" + ss + "\n");
-			for (int i = 0; i < 10; i++) testCatcherOnlyToFliers(result, ss, 8);
+			for (int i = 0; i < 10; i++) testTransferGridSize(result, ss, 8);
 		}
 		System.out.println(result);
 	}
 	
 	private static void sanityCheck() {
 		FlierCatcher game = new FlierCatcher(size);
-		game.setSpawnFreq(0);
-		game.modeler = T6BasicWeightSharing.createModelerWithWgtSharing(game, size*2, trainTurns, true);
+//		game.setSpawnFreq(0);
+//		game.modeler = T6BasicWeightSharing.createModelerWithWgtSharing(game, size*2, trainTurns, true);
+		T5GeoNet.makeModelerGeoNet(game, trainTurns, new int[] {3});
+		System.out.println("Training source...");
 		game.modeler.learnFromMemory(0.3, 0.5, 0, false, learnIterations, 10000);
+		Node output0 = game.modeler.getModelVTA().getNeuralNetwork().getOutputNodes().get(0);
+		Node output5 = game.modeler.getModelVTA().getNeuralNetwork().getOutputNodes().get(5);
+		Node output10 = game.modeler.getModelVTA().getNeuralNetwork().getOutputNodes().get(10);
 		RelationManager relMngr = RelationManager.createFromGridGamePredictor(game, game.modeler);
 		
 		ModelModuleManager mmm = new ModelModuleManager(game, 0.1, 0.2);
@@ -47,6 +57,15 @@ public class T7HyperModelTest {
 		game.modeler = reuseModel;
 
 		mmm.report();
+		
+		ReusableModule mod = mmm.getModuleUsedBy(game.modeler.getModelVTA().getNeuralNetwork().getOutputNodes().get(10));
+		TransferTestUtils.reportWeightsToOutput(output0);
+		System.out.println("---");
+		TransferTestUtils.reportWeightsToOutput(output5);
+		System.out.println("---");
+		TransferTestUtils.reportWeightsToOutput(output10);
+		System.out.println("---");
+		TransferTestUtils.reportWeightsToOutput(mod.getNeuralNet().getOutputNodes().get(0));
 	}
 	
 	private static double testAbstract(GameFactory srcFact, GameFactory trgFact, int hlSizeSrc, int hlSizeTrg,
@@ -55,6 +74,8 @@ public class T7HyperModelTest {
 		
 		FlierCatcher sourceGame = srcFact != null ? srcFact.create() : new FlierCatcher(size);
 		sourceGame.modeler = T6BasicWeightSharing.createModelerWithWgtSharing(sourceGame, hlSizeSrc, trainTurns, true);
+//		game.modeler = T6BasicWeightSharing.createModelerWithWgtSharing(game, size*2, trainTurns, true);
+		T5GeoNet.makeModelerGeoNet(sourceGame, trainTurns, new int[] {3});
 		sourceGame.modeler.learnFromMemory(0.3, 0.5, 0, false, learnIterations, 10000);
 		final double score = sourceGame.modeler.getPctMastered();
 		System.out.println("score " + score);
@@ -67,7 +88,8 @@ public class T7HyperModelTest {
 		mmm.report();
 		
 		FlierCatcher targetGame = trgFact != null ? trgFact.create() : new FlierCatcher(size);
-		ModelLearnerHeavy fullModel = T6BasicWeightSharing.createModelerWithWgtSharing(targetGame, hlSizeTrg, trgTrainSamples, true);
+//		ModelLearnerHeavy fullModel = T6BasicWeightSharing.createModelerWithWgtSharing(targetGame, hlSizeTrg, trgTrainSamples, true);
+		ModelLearnerHeavy fullModel = T5GeoNet.makeModelerGeoNet(targetGame, trainTurns, new int[] {3});
 		fullModel.learnFromMemory(0, 0, 0, false, 1, 10000);
 		RelationManager fullRelMngr = RelationManager.createFromGridGamePredictor(targetGame, fullModel);
 		ModelLearnerModular reuseModel = new ModelLearnerModular(fullModel, fullRelMngr, mmm, trgTrainSamples, processTimes);
@@ -117,29 +139,21 @@ public class T7HyperModelTest {
 			}
 		}, size*2, size*size*3, trgSampleSize, sb, numPlays);
 	}
-	private static void testTransferGridSize() {
-		FlierCatcher lilGame = new FlierCatcher(size);
-		ModelLearnerHeavy lilModel = T6BasicWeightSharing.createModelerWithWgtSharing(lilGame, size*size, trainTurns, true);
-		lilModel.learnFromMemory(0.9, 0.5, 0, false, learnIterations, 10000);
-		RelationManager lilRelMngr = RelationManager.createFromGridGamePredictor(lilGame, lilModel);
-//		Utils.saveModelerToFile("T7LILSOURCE", lilModel);
-		
-		ModelModuleManager mmm = new ModelModuleManager(lilGame, 0.01, 0.1);
-		int processTimes = 3;
-		mmm.processFullModel(lilModel, lilRelMngr, trainTurns, processTimes);
-		mmm.report();
-		
-		FlierCatcher bigGame = new FlierCatcher(size + 1);
-		int bigGameTrainTurns = 50; // sample starvation
-		ModelLearnerHeavy bigModel = T6BasicWeightSharing.createModelerWithWgtSharing(bigGame, size*size*2, bigGameTrainTurns, true);
-		bigModel.learnFromMemory(0, 0, 0, false, 1, 10000);
-		RelationManager bigRelMngr = RelationManager.createFromGridGamePredictor(bigGame, bigModel);
-		ModelLearnerModular reuseModel = new ModelLearnerModular(bigModel, bigRelMngr, mmm, bigGameTrainTurns, processTimes);
-		reuseModel.learnFromMemory(0.9, 0.5, 0, false, learnIterations, 10000);
-		
-		mmm.report();
-		
-		for (int i = 0; i < 8; i++) TransferTestUtils.compareTwoModelers(bigGame, 100, bigModel, reuseModel, true);
+	private static double testTransferGridSize(StringBuilder sb, int trgSampleSize, int numPlays) {
+		return testAbstract(new GameFactory() {
+			@Override
+			public FlierCatcher create() {
+				FlierCatcher game = new FlierCatcher(size);
+				game.setSpawnFreq(0);
+				return game;
+			}
+		}, new GameFactory() {
+			@Override
+			public FlierCatcher create() {
+				FlierCatcher game = new FlierCatcher(size+2);
+				return game;
+			}
+		}, size*2, size*size*3, trgSampleSize, sb, numPlays);
 	}
 
 	private static void testModules() {

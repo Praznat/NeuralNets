@@ -3,6 +3,9 @@ package transfertests;
 import java.util.Collection;
 
 import ann.ActivationFunction;
+import ann.BiasNode;
+import ann.Connection;
+import ann.Node;
 import ann.Utils;
 import ann.testing.FlierCatcher;
 import ann.testing.GridExploreGame;
@@ -54,5 +57,19 @@ public class TransferTestUtils {
 		final double wr2 = game.getWinRate();
 		System.out.println(wr1 + "	vs	" + wr2);
 		return wr2 - wr1;
+	}
+
+	public static void reportWeightsToOutput(Node output) {
+		StringBuilder sb = new StringBuilder();
+		reportWeightsToOutput(output, sb, 0);
+		System.out.println(sb);
+	}
+	private static void reportWeightsToOutput(Node output, StringBuilder sb, int depth) {
+		if (output.getInputConnections().isEmpty()) return;
+		for (int i = 0; i < depth; i++) sb.append("	");
+		for (Connection conn : output.getInputConnections()) {
+			sb.append((depth == 0 ? "\n" : " ") + conn);
+			reportWeightsToOutput(conn.getInputNode(), sb, depth+1);
+		}
 	}
 }
