@@ -1,40 +1,25 @@
 package ann.testing;
 
-import java.awt.Dimension;
 import java.awt.Graphics;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-
 import ann.ActivationFunction;
 import ann.Utils;
+import ann.testing.display.GridGameDisplay;
 import modeler.EnvTranslator;
 import modeler.ModelLearnerHeavy;
 import reasoner.Planner;
 import reasoner.RewardFunction;
 
-public abstract class GridGame {
+public abstract class GridGame implements IGridGame {
 	public ModelLearnerHeavy modeler;
-	protected static JFrame frame = new JFrame();
-	public static GridPanel gridPanel = new GridPanel(frame, 500);
-	public static GridGameControlPanel controlPanel = new GridGameControlPanel(frame);
-	static {
-		frame.setLayout(new GridLayout(0,2));
-		frame.add(gridPanel);
-		frame.add(controlPanel);
-		frame.setVisible(true);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.pack();
-	}
+	protected GridGameDisplay display;
+
 	public final int rows;
 	public final int cols;
 	public final List<double[]> actionChoices = new ArrayList<double[]>();
+	
 	double[] chosenAction;
 	RewardFunction rewardFn;
 	boolean isPaused;
@@ -44,6 +29,11 @@ public abstract class GridGame {
 		this.cols = cols;
 		this.thread = Thread.currentThread();
 	}
+	
+	public int getRows() {return rows;};
+	public int getCols() {return cols;};
+	public List<double[]> getActionChoices() {return actionChoices;}
+	
 	protected static int getGridLoc(int col, int row, int[][] grid) {
 		int cols = grid.length;
 		int rows = grid[0].length;
@@ -95,8 +85,25 @@ public abstract class GridGame {
 	RewardFunction getRewardFunction() {
 		return rewardFn;
 	}
-	void setRewardFunction(RewardFunction rewardFunction) {
+	public void setRewardFunction(RewardFunction rewardFunction) {
 		 this.rewardFn = rewardFunction;
+	}
+	
+	public void repaint() {
+		if (display != null) display.frame.repaint();
+	}
+	
+	public void setupGameDisplay() {
+		display = new GridGameDisplay();
+		display.gridPanel.setGame(this);
+	}
+
+	public void setupControlPanel() {
+		display.controlPanel.setGame(this);
+	}
+	
+	public int getGUnit() {
+		return display.gridPanel.getgUnit();
 	}
 	
 	public static void trainModeler(ModelLearnerHeavy modeler, int turns, GridGame game,
@@ -111,7 +118,7 @@ public abstract class GridGame {
 			modeler.observePreState(game.getState());
 			modeler.observeAction(actionTranslator.toNN(game.chosenAction));
 			game.oneTurn();
-			frame.repaint();
+			game.repaint();
 			modeler.observePostState(game.getState());
 			modeler.saveMemory();
 			if (repaint) try {
@@ -133,7 +140,7 @@ public abstract class GridGame {
 		return modeler;
 	}
 	
-	protected abstract void paintGrid(Graphics g);
+	public abstract void paintGrid(Graphics g);
 	
 	public static void print(double[][] grid) {
 		for (int r = 0; r < grid[0].length; r++) {
@@ -145,101 +152,6 @@ public abstract class GridGame {
 		}
 		System.out.println("***********");
 	}
+
 }
 
-@SuppressWarnings("serial")
-class GridPanel extends JPanel {
-	final int gUnit;
-	GridGame game;
-	JFrame parent;
-	public GridPanel(JFrame parent, int gUnit) {
-		this.parent = parent;
-		this.gUnit = gUnit;
-	}
-	public void paintComponent(Graphics g) {
-		super.paintComponent(g);
-		if (game != null) game.paintGrid(g);
-	}
-	public Dimension getPreferredSize() {
-		if (game == null) return new Dimension(0, 0);
-		return new Dimension(gUnit, gUnit);
-	}
-	public void setGame(GridGame game) {
-		this.game = game;
-		parent.pack();
-	}
-}
-@SuppressWarnings("serial")
-class GridGameControlPanel extends JPanel implements ActionListener {
-	JFrame parent;
-	GridGame game;
-	JButton bL = new JButton("Predict-L");
-	JButton bR = new JButton("Predict-R");
-	JButton bU = new JButton("Predict-U");
-	JButton bD = new JButton("Predict-D");
-	JButton bRestore = new JButton("Predict-Restore");
-	JButton b1 = new JButton("Catch");
-	JButton b2 = new JButton("Evade");
-	private long lastClickMs;
-	private double[] savedState;
-	public GridGameControlPanel(JFrame parent) {
-		this.parent = parent;
-		this.add(bL);
-		this.add(bR);
-		this.add(bU);
-		this.add(bD);
-		this.add(bRestore);
-		this.add(b1);
-		this.add(b2);
-		bL.addActionListener(this);
-		bR.addActionListener(this);
-		bU.addActionListener(this);
-		bD.addActionListener(this);
-		bRestore.addActionListener(this);
-		b1.addActionListener(this);
-		b2.addActionListener(this);
-	}
-	public void setGame(GridGame game) {
-		this.game = game;
-		parent.pack();
-	}
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		final String command = e.getActionCommand();
-		long ms = System.currentTimeMillis();
-		if (ms < lastClickMs + 50) return;
-		lastClickMs = ms;
-		if (command.startsWith("Predict")) {
-			int joints = 3;
-			if (command.equals("Predict-Restore") && savedState != null) {
-				game.convertFromState(savedState);
-			} else {
-				double[] state = game.getState();
-				if (savedState == null) savedState = state;
-				double[] action = null;
-				if (command.equals("Predict-L")) {
-					action = GridExploreGame.LEFT;
-				} else if (command.equals("Predict-R")) {
-					action = GridExploreGame.RIGHT;
-				} else if (command.equals("Predict-U")) {
-					action = GridExploreGame.UP;
-				} else if (command.equals("Predict-D")) {
-					action = GridExploreGame.DOWN;
-				}
-				System.out.println(game.modeler);
-				double[] newStateVars = game.modeler.newStateVars(state, action, joints);
-				//			System.out.println(Utils.stringArray(newStateVars, 2));
-				game.convertFromState(newStateVars);
-			}
-			parent.repaint();
-//			game.convertFromState(state);
-//			repaint();
-		}
-		else if (command.equals("Catch")) {
-			game.setRewardFunction(GridTagGame.follow(game));
-		}
-		else if (command.equals("Evade")) {
-			game.setRewardFunction(GridTagGame.evade(game));
-		}
-	}
-}

@@ -7,7 +7,7 @@ import ann.BiasNode;
 import ann.testing.FlierCatcher;
 import ann.testing.GridExploreGame;
 import modeler.ModelLearnerHeavy;
-import modularization.ModuleDisplayer;
+import modulemanagement.ModelDisplayer;
 
 /**
  * IS THIS EVEN WORTH IT? rules are so simple it's just as easy to train I/O from scratch

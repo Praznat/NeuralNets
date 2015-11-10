@@ -99,9 +99,6 @@ public class WeightPruner {
 	private static void storeCumAbsWgt(int originI, Node n, double sofar,
 			Map<Node, Integer> outToInt, double[][] result) {
 		Collection<Connection> conns = n.getOutputConnections();
-		if (originI == 28) {
-			System.out.println(originI);
-		}
 		if (conns.isEmpty()) {
 			Integer o = outToInt.get(n);
 			if (o != null) result[originI][outToInt.get(n)] += sofar;

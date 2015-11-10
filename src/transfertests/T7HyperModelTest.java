@@ -7,8 +7,10 @@ import ann.testing.FlierCatcher;
 import modeler.ModelLearner;
 import modeler.ModelLearnerHeavy;
 import modeler.ModelLearnerModular;
-import modularization.ModelModuleManager;
-import modularization.ReusableModule;
+import modulemanagement.ModelDisplayer;
+import modulemanagement.ModuleManager;
+import modulemanagement.ModuleDisplayer;
+import modulemanagement.ReusableModule;
 
 public class T7HyperModelTest {
 	static int size = 5;
@@ -18,8 +20,8 @@ public class T7HyperModelTest {
 	public static void main(String[] args) {
 //		testModules();
 //		sanityCheck();
-//		testTransferGridSize(new StringBuilder(), 50, 4);
-		testABunch();
+		testTransferGridSize(new StringBuilder(), 100, 4);
+//		testABunch();
 		
 //		StringBuilder result = new StringBuilder();
 //		testCatcherOnlyToFliers(result, 1000, 1);
@@ -47,7 +49,7 @@ public class T7HyperModelTest {
 		Node output10 = game.modeler.getModelVTA().getNeuralNetwork().getOutputNodes().get(10);
 		RelationManager relMngr = RelationManager.createFromGridGamePredictor(game, game.modeler);
 		
-		ModelModuleManager mmm = new ModelModuleManager(game, 0.1, 0.2);
+		ModuleManager mmm = new ModuleManager(0.1, 0.2);
 		int processTimes = 3;
 		mmm.processFullModel(game.modeler, relMngr, trainTurns, processTimes);
 		mmm.report();
@@ -82,7 +84,7 @@ public class T7HyperModelTest {
 		sb.append("Source	" + score);
 		RelationManager catcherRelMngr = RelationManager.createFromGridGamePredictor(sourceGame, sourceGame.modeler);
 		
-		ModelModuleManager mmm = new ModelModuleManager(sourceGame, 0.1, 0.2);
+		ModuleManager mmm = new ModuleManager(0.1, 0.2);
 		int processTimes = 3;
 		mmm.processFullModel(sourceGame.modeler, catcherRelMngr, trainTurns, processTimes);
 		mmm.report();
@@ -104,6 +106,11 @@ public class T7HyperModelTest {
 		}
 		transferScore /= n;
 		sb.append("	Transfer	" + transferScore + '\n');
+
+		ModelDisplayer modelDisplayer1 = new ModelDisplayer(fullModel, 2, targetGame);
+		ModelDisplayer modelDisplayer2 = new ModelDisplayer(reuseModel, 2, targetGame);
+		ModuleDisplayer moduleDisplayer = new ModuleDisplayer(reuseModel, 2, targetGame);
+		
 		return transferScore;
 	}
 
@@ -162,7 +169,7 @@ public class T7HyperModelTest {
 		RelationManager relMngr = RelationManager.createFromGridGamePredictor(game, modelerHeavy);
 		modelerHeavy.learnFromMemory(0.9, 0.5, 0, false, learnIterations, 10000);
 		
-		ModelModuleManager mmm = new ModelModuleManager(game, 0.01, 0.1);
+		ModuleManager mmm = new ModuleManager(0.01, 0.1);
 		int processTurns = 200;
 		int processTimes = 3;
 		mmm.processFullModel(modelerHeavy, relMngr, processTurns, processTimes);

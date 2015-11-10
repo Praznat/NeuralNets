@@ -52,7 +52,7 @@ public class CollectorGame extends GridExploreGame {
 	public CollectorGame(int size) {
 		super(size, size);
 		food = new boolean[cols][rows];
-		gridPanel.setGame(this);
+		setupGameDisplay();
 	}
 	public static CollectorGame trainedGame(int size, int learnIterations, int sampleSizeMultiplier, int m, int repaintMs) {
 		CollectorGame game = new CollectorGame(size);
@@ -158,7 +158,7 @@ public class CollectorGame extends GridExploreGame {
 		int origY = playerPos.y;
 		setPos(playerPos.x + (int) action[0], playerPos.y + (int) action[1], playerPos,playerGrid,WRAP,false);
 		if (walls[playerPos.x][playerPos.y] > 0.5) setPos(origX, origY, playerPos,playerGrid,WRAP,false);
-		if (repaint) frame.repaint();
+		if (repaint) repaint();
 	}
 
 	protected void createNewWalls() {
@@ -202,7 +202,7 @@ public class CollectorGame extends GridExploreGame {
 	}
 	
 	@Override
-	protected void paintGrid(Graphics g) {
+	public void paintGrid(Graphics g) {
 		super.paintGrid(g);
 		for (int c = 0; c < food.length; c++) {
 			boolean[] col = food[c];

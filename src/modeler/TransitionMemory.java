@@ -1,9 +1,12 @@
 package modeler;
 
+import java.io.Serializable;
+
 import ann.*;
 import ann.ExperienceReplay.Memory;
 
-public class TransitionMemory implements Memory {
+@SuppressWarnings("serial")
+public class TransitionMemory implements Memory, Serializable {
 
 	protected double[] preStateVars = {};
 	protected double[] action = {};

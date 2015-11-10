@@ -46,7 +46,7 @@ public class StochasticPitfall extends GridTagGame {
 		lastPlayerPos = playerPos.getLocation();
 		setPlayerPos(0, floorRow());
 		playerRule = GUY_MOVEMENT;
-		gridPanel.setGame(this);
+		setupGameDisplay();
 	}
 	
 	public void oneTurn() {
@@ -55,7 +55,7 @@ public class StochasticPitfall extends GridTagGame {
 		lastPlayerPos = tmp;
 		epochsPast++;
 		if (opponentGrid[playerPos.x][playerPos.y] > 0.5) hits++;
-		frame.repaint();
+		repaint();
 	}
 	
 	protected void resetPoints() {
@@ -90,7 +90,7 @@ public class StochasticPitfall extends GridTagGame {
 	}
 
 	@Override
-	protected void paintGrid(Graphics g) {
+	public void paintGrid(Graphics g) {
 		final int gSub = 500 / cols;
 		final int thinness = gSub / 16;
 		int[][] pGrid = this.opponentGrid;

@@ -9,7 +9,7 @@ import ann.testing.GridExploreGame;
 import modeler.ModelLearner;
 import modeler.ModelLearnerHeavy;
 import modularization.HardWeightSharing;
-import modularization.ModuleDisplayer;
+import modulemanagement.ModelDisplayer;
 
 public class T6BasicWeightSharing {
 
@@ -39,7 +39,7 @@ public class T6BasicWeightSharing {
 		double discRate = 0.2;
 		FlierCatcher.repaintMs = 70;
 		FlierCatcher.play((ModelLearnerHeavy)model, game, epochs, numSteps, numRuns, joints, skewFactor, discRate);		
-		ModuleDisplayer moduleDisplayer = new ModuleDisplayer(model, 2, gridSpec, gridSpec, new int[] {4, 1});
+		ModelDisplayer moduleDisplayer = new ModelDisplayer(model, 2, gridSpec, gridSpec, new int[] {4, 1});
 	}
 
 	static ModelLearnerHeavy createModelerWithWgtSharing(FlierCatcher game) {

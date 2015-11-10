@@ -58,8 +58,8 @@ public class FlierCatcher extends GridExploreGame {
 	public FlierCatcher(int size) {
 		super(size-1, size+1);
 		opponentGrid = new int[cols][rows];
-		gridPanel.setGame(this);
-		controlPanel.setGame(this);
+		setupGameDisplay();
+		setupControlPanel();
 		rewardFn = GridTagGame.follow(this);
 	}
 
@@ -259,7 +259,7 @@ public class FlierCatcher extends GridExploreGame {
 		} else {
 //			System.out.println("---");
 		}
-		if (repaint) frame.repaint();
+		if (repaint) repaint();
 		if (haveEnemies) moveEnemies();
 	}
 	
@@ -349,7 +349,7 @@ public class FlierCatcher extends GridExploreGame {
 	}
 
 	@Override
-	protected void paintGrid(Graphics g) {
+	public void paintGrid(Graphics g) {
 		super.paintGrid(g);
 		final int gSub = gUnit/4;
 		for (int r = 0; r < rows; r++) {

@@ -34,9 +34,16 @@ public abstract class ModelLearner {
 	public TransitionMemory saveMemory() {
 		if (experienceReplay == null) throw new IllegalStateException("must define experience replay size");
 		TransitionMemory tm = createMemory();
-		experienceReplay.addMemory(tm);
+		saveMemory(tm);
 		clearWorkingMemory();
 		return tm;
+	}
+	public void saveMemory(TransitionMemory tm) {
+		experienceReplay.addMemory(tm);
+	}
+	public void saveMemories(Collection<TransitionMemory> memories) {
+		if (experienceReplay == null) throw new IllegalStateException("must define experience replay size");
+		for (TransitionMemory tm : memories) experienceReplay.addMemory(tm);
 	}
 	
 	public void clearWorkingMemory() {

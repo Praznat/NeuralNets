@@ -1,16 +1,16 @@
 package modeler;
 
 import ann.indirectencodings.RelationManager;
-import modularization.ModelModuleManager;
+import modulemanagement.ModuleManager;
 
 public class ModelLearnerModular extends ModelLearnerHeavy {
 
-	private final ModelModuleManager moduleManager;
+	private final ModuleManager moduleManager;
 	private final RelationManager relMngr;
 	private int processTransitions;
 	private int processTimes;
 
-	public ModelLearnerModular(ModelLearnerHeavy base, RelationManager relMngr, ModelModuleManager moduleManager,
+	public ModelLearnerModular(ModelLearnerHeavy base, RelationManager relMngr, ModuleManager moduleManager,
 			int processTransitions, int processTimes) {
 		super(base.errorHalfLife, new int[] {}, null, null, base.actFn, base.maxReplaySize);
 		this.relMngr = relMngr;
@@ -37,5 +37,13 @@ public class ModelLearnerModular extends ModelLearnerHeavy {
 			boolean resample, int iterations, long displayProgressMs, double stopAtErrThreshold) {
 		super.learnFromMemory(lRate, mRate, sRate, resample, iterations, displayProgressMs, stopAtErrThreshold);
 		moduleManager.processFullModel(this, relMngr, processTransitions, processTimes);
+	}
+
+	public ModuleManager getModuleManager() {
+		return moduleManager;
+	}
+
+	public RelationManager getRelMngr() {
+		return relMngr;
 	}
 }

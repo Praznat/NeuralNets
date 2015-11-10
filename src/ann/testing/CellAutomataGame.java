@@ -104,7 +104,7 @@ public class CellAutomataGame extends GridGame {
 	}
 	static void observeGame(ModelLearner modeler, int size, int epochs, double pOn, long lengthMs, boolean reInit) {
 		CellAutomataGame game = new CellAutomataGame(size, size, GAME_OF_LIFE);
-		gridPanel.setGame(game);
+		game.setupGameDisplay();
 		game.initialize(pOn);
 		long frameMs = lengthMs / epochs;
 		for (int t = 0; t < epochs; t++) {
@@ -118,7 +118,7 @@ public class CellAutomataGame extends GridGame {
 				modeler.saveMemory();
 				if (sum(postState) < 3) game.initialize(pOn);
 			}
-			frame.repaint();
+			game.repaint();
 			try {
 				long elapsedMs = System.currentTimeMillis() - startMs;
 				Thread.sleep(Math.max(0, frameMs - elapsedMs));
@@ -131,8 +131,8 @@ public class CellAutomataGame extends GridGame {
 			boolean alsoLearn) {
 		int numRuns = 5;
 		int jointAdjustments = 0;
-		gridPanel.setGame(game);
-		frame.repaint();
+		game.setupGameDisplay();
+		game.repaint();
 		boolean validPre = false;
 		for (int t = 0; t < epochs; t++) {
 			double[] state = game.getState();
@@ -141,7 +141,7 @@ public class CellAutomataGame extends GridGame {
 				validPre = false;
 				state = game.getState();
 			}
-			frame.repaint();
+			game.repaint();
 			if (alsoLearn) {
 				if (validPre) {
 					modeler.observePostState(state); // TODO NO!!! real state!
@@ -168,9 +168,9 @@ public class CellAutomataGame extends GridGame {
 	}
 
 	@Override
-	protected void paintGrid(Graphics g) {
-		final int rHgt = gridPanel.gUnit / rows;
-		final int cWid = gridPanel.gUnit / cols;
+	public void paintGrid(Graphics g) {
+		final int rHgt = getGUnit() / rows;
+		final int cWid = getGUnit() / cols;
 		g.setColor(this.mode == 0 ? Color.BLACK : Color.BLUE);
 		int[][] pGrid = this.grid;
 		for (int c = 0; c < pGrid.length; c++) {

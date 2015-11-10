@@ -1,5 +1,6 @@
-package modularization;
+package modulemanagement;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -13,13 +14,15 @@ import ann.indirectencodings.IndirectInput;
 import ann.indirectencodings.RelationManager;
 import ann.testing.GridGame;
 import modeler.ModelLearner;
+import modularization.ModularizationUtils;
 
 /**
  * Given the key of some output variable, it looks up the keys to related input variables.
  * Then, given the values of those inputs for some sample, it generates the value for the output.
  *
  */
-public class ReusableModule {
+@SuppressWarnings("serial")
+public class ReusableModule implements Serializable {
 	
 	private final Collection<IndirectInput> relations = new ArrayList<IndirectInput>();
 	private final Map<IndirectInput, Node> rel2ModuleNode = new HashMap<IndirectInput, Node>();
@@ -30,10 +33,10 @@ public class ReusableModule {
 	 * creates a reusable module
 	 * @param relMngr 
 	 */
-	public static ReusableModule createNeighborHoodModule(GridGame game, ModelLearner modeler,
+	public static ReusableModule createNeighborHoodModule(ModelLearner modeler,
 			RelationManager relMngr, FFNeuralNetwork fullModelNN, Node outputOfInterest) {
 		ReusableModule result = new ReusableModule();
-		result.relations.addAll(RelationManager.USED_RELS);
+		result.relations.addAll(relMngr.getUsedRels());
 		result.setModuleNN(fullModelNN, outputOfInterest, relMngr);
 		return result;
 	}

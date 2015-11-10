@@ -4,8 +4,8 @@ import ann.Utils;
 import ann.testing.FlierCatcher;
 import ann.testing.FlierCatcher.MoveRule;
 import modeler.ModelLearnerHeavy;
-import modularization.ModuleDisplayer;
 import modularization.WeightPruner;
+import modulemanagement.ModelDisplayer;
 
 public class T3IsolateIndependentRegions {
 	final static int size = 5;
@@ -26,7 +26,7 @@ public class T3IsolateIndependentRegions {
 		
 		modularize(model, 0.9, learnIterations);
 		int[] gridSpec = new int[] {game.rows, game.cols};
-		ModuleDisplayer moduleDisplayer = new ModuleDisplayer(model, 2, gridSpec, gridSpec, new int[] {4, 1});
+		ModelDisplayer moduleDisplayer = new ModelDisplayer(model, 2, gridSpec, gridSpec, new int[] {4, 1});
 		
 	}
 	

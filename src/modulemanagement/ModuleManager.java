@@ -1,4 +1,4 @@
-package modularization;
+package modulemanagement;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -7,41 +7,35 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.TreeSet;
 
 import ann.FFNeuralNetwork;
 import ann.Node;
 import ann.Utils;
 import ann.indirectencodings.RelationManager;
-import ann.testing.GridGame;
 import modeler.ModelLearner;
 import modeler.TransitionMemory;
 
-public class ModelModuleManager {
+public class ModuleManager {
 
-	private final GridGame game;
-	private final Map<Node, ReusableModule> nodeModules = new HashMap<Node, ReusableModule>();
+	private final Map<Node, ModuleDistribution> nodeModules = new HashMap<Node, ModuleDistribution>();
+	private final Collection<ReusableModule> allModules = new HashSet<ReusableModule>();
 	private final Set<ModelLearner> modelersSeen = new HashSet<ModelLearner>();
 	
 	private double loErrorThresh = 0.1;
 	private double hiErrorThresh = 0.4;
 	private TreeSet<OutputError> outputErrors = new TreeSet<OutputError>();
 
-	public ModelModuleManager(GridGame game) {
-		this.game = game;
-	}
-
 	/**
 	 * low thresh determines how low error must be in order to create new module
 	 * high thresh determines how low error must be in order to reuse old module
 	 */
-	public ModelModuleManager(GridGame game, double loThresh, double hiThresh) {
-		this(game);
+	public ModuleManager(double loThresh, double hiThresh) {
 		this.loErrorThresh = loThresh;
 		this.hiErrorThresh = hiThresh;
 	}
 	
+	/** return output activations given state and action inputs */
 	public double[] getOutputs(ModelLearner modeler, RelationManager relMngr, double[] stateVars, double[] action) {
 		double[] inputs = Utils.concat(stateVars, action);
 		FFNeuralNetwork neuralNetwork = getModelNetwork(modeler);
@@ -50,12 +44,14 @@ public class ModelModuleManager {
 		double[] outputs = new double[stateVars.length];
 		int i = 0;
 		for (Node output : outputNodes) {
-			ReusableModule module = nodeModules.get(output);
+			ModuleDistribution moduleDist = nodeModules.get(output);
 			// if no module use original network output
-			if (module == null) outputs[i] = output.getActivation();
+			if (moduleDist == null) {
+				outputs[i] = output.getActivation();
+			}
 			// if module use module output
 			else {
-				outputs[i] = module.evaluateOutput(output, relMngr);
+				outputs[i] = moduleDist.getMostLikelyModule().evaluateOutput(output, relMngr);
 			}
 			i++;
 		}
@@ -81,12 +77,12 @@ public class ModelModuleManager {
 			double[] observed = tm.getPostState();
 			int i = 0;
 			for (Node output : outputNodes) {
-				ReusableModule module = nodeModules.get(output);
+				ModuleDistribution moduleDist = nodeModules.get(output);
 				// if no module use original network error
-				if (module == null) errors[i] += Math.abs(output.getActivation() - observed[i]);
+				if (moduleDist == null) errors[i] += Math.abs(output.getActivation() - observed[i]);
 				// if module use module error
 				else {
-					errors[i] = calcErrorFromTransition(module, relMngr, tm, modeler, output, i);
+					errors[i] = calcErrorFromTransition(moduleDist.getMostLikelyModule(), relMngr, tm, modeler, output, i);
 				}
 				i++;
 			}
@@ -110,49 +106,41 @@ public class ModelModuleManager {
 				// dont worry if it already has module
 				if (nodeModules.get(output) != null) continue;
 				// pick best existing module
-				ReusableModule bestModule = pickModule(modeler, relMngr, output, i, transitions, error);
-				if (bestModule != null) nodeModules.put(output, bestModule);
+				ModuleDistribution moduleDist = recalcModuleDistribution(modeler, relMngr, output, i, transitions);
+				if (moduleDist != null && moduleDist.getLowestError() < error) nodeModules.put(output, moduleDist);
 				// create new module if no existing ones work
 				else {
 //					System.out.println("new module created for " + output);
-					ReusableModule module = ReusableModule.createNeighborHoodModule(game, modeler, relMngr,
+					ReusableModule module = ReusableModule.createNeighborHoodModule(modeler, relMngr,
 							getModelNetwork(modeler), output);
-					nodeModules.put(output, module);
+					allModules.add(module);
+					nodeModules.put(output, new ModuleDistribution(module, error));
 				}
 			} else if (error < hiErrorThresh) {
 				// pick best module if lower than current error
-				ReusableModule bestModule = pickModule(modeler, relMngr, output, i, transitions, error);
-				if (bestModule != null) nodeModules.put(output, bestModule);
+				ModuleDistribution moduleDist = recalcModuleDistribution(modeler, relMngr, output, i, transitions);
+				if (moduleDist != null && moduleDist.getLowestError() < error) nodeModules.put(output, moduleDist);
 			}
 		}
-	}
-
-	public ReusableModule pickModule(ModelLearner modeler, RelationManager relMngr, Node output, int outputKey,
-			int numTransitions, double errorThresh) {
-		Collection<TransitionMemory> transitions = modeler.getExperience().getBatch(numTransitions, true);
-		return pickModule(modeler, relMngr, output, outputKey, transitions, errorThresh);
 	}
 	
-	public ReusableModule pickModule(ModelLearner modeler, RelationManager relMngr, Node output, int outputKey,
-			Collection<TransitionMemory> transitions, double errorThresh) {
-		double lowestError = errorThresh;
-		ReusableModule best = null;
-		for (ReusableModule module : nodeModules.values()) {
-			double meanerror = 0;
+	private ModuleDistribution recalcModuleDistribution(ModelLearner modeler, RelationManager relMngr,
+			Node output, int outputKey, Collection<TransitionMemory> transitions) {
+		ModuleDistribution result = new ModuleDistribution();
+		if (allModules.isEmpty()) return null;
+		for (ReusableModule module : allModules) {
+			double error = 0;
 			for (TransitionMemory tm : transitions) {
-				meanerror += calcErrorFromTransition(module, relMngr, tm, modeler, output, outputKey);
+				error += calcErrorFromTransition(module, relMngr, tm, modeler, output, outputKey);
 			}
-			meanerror /= transitions.size();
-			if (meanerror < lowestError) {
-				lowestError = meanerror;
-				best = module;
-			}
+			error /= transitions.size();
+			result.addModule(module, error);
 		}
-		return best;
+		return result;
 	}
 	
 	public ReusableModule getModuleUsedBy(Node output) {
-		return nodeModules.get(output);
+		return nodeModules.get(output).getMostLikelyModule();
 	}
 	
 	private double calcErrorFromTransition(ReusableModule module, RelationManager relMngr, TransitionMemory tm,
@@ -180,8 +168,6 @@ public class ModelModuleManager {
 
 	public void report() {
 		System.out.println("Reporting on Module Manager");
-		Set<ReusableModule> allModules = new HashSet<ReusableModule>();
-		allModules.addAll(nodeModules.values());
 		System.out.println(allModules.size() + " modules total");
 		TreeSet<OutputError> ordered = new TreeSet<OutputError>(new Comparator<OutputError>() {
 			@Override
@@ -195,6 +181,10 @@ public class ModelModuleManager {
 		}
 	}
 	
+	public Map<Node, ModuleDistribution> getNodeModules() {
+		return nodeModules;
+	}
+
 	private static class OutputError implements Comparable<OutputError> {
 		
 		private Node output;

@@ -93,7 +93,7 @@ public class GridExploreGame extends GridGame {
 			Planner explorer = Planner.createKWIKExplorer(modeler, numPlanSteps, numPlanRuns,
 					EnvTranslator.SAME, actionTranslator);
 			GridExploreGame game = new GridExploreGame(size, size);
-			gridPanel.setGame(game);
+			game.setupGameDisplay();
 			double pctFilled = 0;
 			for (int t = 0; t < turns; t++) {
 				long startMs = System.currentTimeMillis();
@@ -149,7 +149,7 @@ public class GridExploreGame extends GridGame {
 	
 	protected void move(double[] action, boolean repaint) {
 		setPos(playerPos.x + (int) action[0], playerPos.y + (int) action[1], playerPos,playerGrid,WRAP,false);
-		if (repaint) frame.repaint();
+		if (repaint) repaint();
 	}
 
 	public double[] getState() {
@@ -173,7 +173,7 @@ public class GridExploreGame extends GridGame {
 	}
 
 	@Override
-	protected void paintGrid(Graphics g) {
+	public void paintGrid(Graphics g) {
 		final int gSub = gUnit/4;
 		int[][] pGrid = this.playerGrid;
 		for (int c = 0; c < pGrid.length; c++) {

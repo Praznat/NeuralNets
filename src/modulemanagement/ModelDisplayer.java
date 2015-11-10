@@ -1,4 +1,4 @@
-package modularization;
+package modulemanagement;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -15,25 +15,34 @@ import javax.swing.JPanel;
 
 import ann.FFNeuralNetwork;
 import ann.Utils;
+import ann.testing.GridGame;
 import modeler.ModelLearner;
+import modeler.ModelLearnerModular;
+import modularization.WeightPruner;
 
-public class ModuleDisplayer implements MouseListener {
+public class ModelDisplayer<T extends ModelLearner> implements MouseListener {
 
 	private JFrame frame;
 	private ModulePanel inPanel;
 	private ModulePanel outPanel;
-	private ModelLearner modeler;
-	private double[][] inOutAbsConnWgt;
-	private double maxWeight;
-	private int[][] grids;
-	private int numVars;
-	private int gUnit = 35;
+	protected T modeler;
+	protected int[][] grids;
+	protected int numVars;
+	protected int gUnit = 35;
 	private Map<Point, Integer> centerToVar = new HashMap<Point, Integer>();
 
-	public ModuleDisplayer(ModelLearner modeler, final int actGrid, final int[]... grids) {
+	public ModelDisplayer(T modeler, final int actGridKey, final GridGame game) {
+		// TODO reduce hackiness... (grid for player, grid for opponent class, what about if it's not these two?)
+		this(modeler, actGridKey, new int[] {game.rows, game.cols}, new int[] {game.rows, game.cols},
+				new int[] {game.actionChoices.size(), 1});
+	}
+	public ModelDisplayer(T modeler, final int actGridKey, final int[]... grids) {
 		this.grids = grids;
 		this.numVars = countVars();
 		this.modeler = modeler;
+		if (this.modeler instanceof ModelLearnerModular) {
+			System.out.println("WARNING: Consider useing ModuleDisplayer for ModelLearnerModular");
+		}
 		createJFrame();
 		final GridPainter gp = new GridPainter() {
 			private int v = 0;
@@ -41,58 +50,35 @@ public class ModuleDisplayer implements MouseListener {
 			public void paintCell(Graphics g, int c, int r) {
 				super.paintCell(g, c, r);
 				if (v < numVars) {
-					Point p = new Point(c*gUnit + gUnit/2, r*gUnit + gUnit/2);
-					centerToVar.put(p, v++);
-					g.setColor(Color.RED);
-					g.drawLine(p.x, p.y, p.x, p.y);
+					paintPredVar(r, c, g, v++);
+				} else {
+					System.out.println("ModelDisplayer shouldnt count v farther than numVars");
 				}
 			}
 		};
 		this.inPanel.setModulePainter(new ModulePainter() {
 			@Override
 			public void modulePaint(Graphics g) {
-				paintGridCells(g, gp, actGrid);
+				paintGridCells(g, gp, actGridKey);
 			}
 		});
 	}
 	
-	public void showSingleVarDependencies(final int varKey) {
-		outPanel.setModulePainter(new ModulePainter() {
-
-			@Override
-			public void modulePaint(Graphics g) {
-				FFNeuralNetwork nn = modeler.getTransitionsModule().getNeuralNetwork();
-				if (inOutAbsConnWgt == null) {
-					inOutAbsConnWgt = WeightPruner.inOutAbsConnWgt(nn, true);
-					maxWeight = Utils.max(inOutAbsConnWgt);
-				}
-				final double[] varPower = new double[inOutAbsConnWgt.length];
-				for (int i = 0; i < varPower.length; i++) {
-					double w = inOutAbsConnWgt[i][varKey];
-					varPower[i] = w;
-				}
-				final double denom = maxWeight;
-				GridPainter gp = new GridPainter() {
-					int j = 0;
-					@Override
-					public void paintCell(Graphics g, int c, int r) {
-						g.setColor(Color.BLACK);
-						g.drawRect(c*gUnit, r*gUnit, gUnit, gUnit);
-						float w = (float) (varPower[j++] / denom);
-						g.setColor(new Color(1f, 0f, 0f, w));
-						g.fillRect(c*gUnit, r*gUnit, gUnit, gUnit);
-					}
-				};
-				paintGridCells(g, gp);
-			}
-		});
+	protected void paintPredVar(int r, int c, Graphics g, int v) {
+		Point p = new Point(c*gUnit + gUnit/2, r*gUnit + gUnit/2);
+		centerToVar.put(p, v);
+	}
+	
+	private void showSingleVarDependencies(final int varKey) {
+		outPanel.setModulePainter(createModulePainter(varKey));
 		outPanel.repaint();
 	}
 
-	private void paintGridCells(Graphics g, GridPainter gp) {
+	protected void paintGridCells(Graphics g, GridPainter gp) {
 		paintGridCells(g, gp, -1);
 	}
-	private void paintGridCells(Graphics g, GridPainter gp, int skipGrid) {
+	// skipGrid indicates index of skip action vars grid in predicted vars
+	protected void paintGridCells(Graphics g, GridPainter gp, int skipGrid) {
 		int offC = 0;
 		int i = 0;
 		for (int[] grid : grids) {
@@ -144,7 +130,6 @@ public class ModuleDisplayer implements MouseListener {
 		}
 		int varKey = centerToVar.get(closestP);
 		showSingleVarDependencies(varKey);
-		System.out.println(varKey);
 	}
 	@Override
 	public void mouseEntered(MouseEvent arg0) {}
@@ -178,5 +163,38 @@ public class ModuleDisplayer implements MouseListener {
 			g.setColor(Color.BLACK);
 			g.drawRect(c*gUnit, r*gUnit, gUnit, gUnit);
 		}
+	}
+	
+	protected ModulePainter createModulePainter(final int varKey) {
+		return new ModulePainter() {
+			private double[][] inOutAbsConnWgt;
+			private double maxWeight;
+			@Override
+			public void modulePaint(Graphics g) {
+				FFNeuralNetwork nn = modeler.getTransitionsModule().getNeuralNetwork();
+				if (inOutAbsConnWgt == null) {
+					inOutAbsConnWgt = WeightPruner.inOutAbsConnWgt(nn, false);
+					maxWeight = Utils.max(inOutAbsConnWgt);
+				}
+				final double[] varPower = new double[inOutAbsConnWgt.length];
+				for (int i = 0; i < varPower.length; i++) {
+					double w = inOutAbsConnWgt[i][varKey];
+					varPower[i] = w;
+				}
+				final double denom = maxWeight;
+				GridPainter gp = new GridPainter() {
+					int j = 0;
+					@Override
+					public void paintCell(Graphics g, int c, int r) {
+						g.setColor(Color.BLACK);
+						g.drawRect(c*gUnit, r*gUnit, gUnit, gUnit);
+						float w = (float) (varPower[j++] / denom);
+						g.setColor(new Color(1f, 0f, 0f, w));
+						g.fillRect(c*gUnit, r*gUnit, gUnit, gUnit);
+					}
+				};
+				paintGridCells(g, gp);
+			}
+		};
 	}
 }

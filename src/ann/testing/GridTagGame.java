@@ -45,7 +45,7 @@ public class GridTagGame extends GridGame {
 		ModelLearnerHeavy modeler = new ModelLearnerHeavy(500, new int[] {size * 4 * 2},
 				new int[] {}, new int[] {}, ActivationFunction.SIGMOID0p5, turns);
 		GridTagGame game = new GridTagGame(size, size);
-		gridPanel.setGame(game);
+		game.setupGameDisplay();
 		game.setPlayerRule(game.clockwiseAction);
 		game.setOpponentRule(game.idle);
 		game.setPlayerPos(size-1, size-1);
@@ -76,7 +76,7 @@ public class GridTagGame extends GridGame {
 	protected static void testReward() {
 		int size = 3;
 		GridTagGame game = new GridTagGame(size, size);
-		gridPanel.setGame(game);
+		game.setupGameDisplay();
 		game.setPlayerPos(1, 1);
 		game.setOpponentPos(1, 1);
 		System.out.println(-1 + "==" + evade(game).getReward(game.getState()));
@@ -95,7 +95,7 @@ public class GridTagGame extends GridGame {
 		Planner chimp = Planner.createRandomChimp();
 		Planner explorer = Planner.createNoveltyExplorer(modeler, numPlanSteps, numPlanRuns, null, null);
 		GridTagGame game = new GridTagGame(size, size);
-		gridPanel.setGame(game);
+		game.setupGameDisplay();
 		game.setPlayerRule(game.clockwiseAction);
 		game.setOpponentRule(game.idle);
 		game.setPlayerPos(size-1, size-1);
@@ -123,7 +123,7 @@ public class GridTagGame extends GridGame {
 		ModelLearnerHeavy modeler = new ModelLearnerHeavy(500, new int[] {size * 4 * 2},
 				new int[] {}, new int[] {}, ActivationFunction.SIGMOID0p5, turns);
 		GridTagGame game = new GridTagGame(size, size);
-		gridPanel.setGame(game);
+		game.setupGameDisplay();
 		game.setPlayerRule(game.clockwiseAction);
 		game.setOpponentRule(game.rightBounceOffWall);
 		for (int i = 1; i < size - 1; i++) game.walls[i][1] = 1;
@@ -164,7 +164,7 @@ public class GridTagGame extends GridGame {
 //		Planner explorer = Planner.createNoveltyExplorer(modeler, numPlanSteps, numPlanRuns, null, null);
 		Planner explorer = Planner.createRandomChimp();
 		GridTagGame game = new GridTagGame(size, size);
-		gridPanel.setGame(game);
+		game.setupGameDisplay();
 		game.setPlayerRule(game.clockwiseAction);
 		game.setOpponentRule(game.mostlyClockwise);
 		game.setPlayerPos(size-1, size-1);
@@ -300,7 +300,7 @@ public class GridTagGame extends GridGame {
 	public void oneTurn() {
 		opponentRule.move();
 		playerRule.move(chosenAction);
-		frame.repaint();
+		repaint();
 	}
 	
 	public double[][] getGridFromState(double[] state, boolean opponentNotPlayer) {
@@ -399,10 +399,10 @@ public class GridTagGame extends GridGame {
 			}
 		};
 	}
-	protected static final RewardFunction follow(GridGame game) {
+	public static final RewardFunction follow(GridGame game) {
 		return tagReward(true, game.cols, game.rows);
 	}
-	protected static final RewardFunction evade(GridGame game) {
+	public static final RewardFunction evade(GridGame game) {
 		return tagReward(false, game.cols, game.rows);
 	}
 
@@ -423,7 +423,7 @@ public class GridTagGame extends GridGame {
 	private Color eColor() {return isTag? Color.GREEN : Color.RED;}
 	
 	@Override
-	protected void paintGrid(Graphics g) {
+	public void paintGrid(Graphics g) {
 		final int gUnit = 100;
 		final int gSub = 10;
 		g.setColor(Color.BLACK);

@@ -7,7 +7,7 @@ import ann.BiasNode;
 import ann.testing.FlierCatcher;
 import ann.testing.GridExploreGame;
 import modeler.ModelLearnerHeavy;
-import modularization.ModuleDisplayer;
+import modulemanagement.ModelDisplayer;
 
 /**
  * when testTurns/learnIterations are low, prior network does significantly worse than scratch
@@ -78,6 +78,6 @@ public class T2SourceAsPrior {
 	
 	private static void modularizeAndDisplay(ModelLearnerHeavy model, int[] gridSpec) {
 		T3IsolateIndependentRegions.modularize(model, 0.9, 1);
-		ModuleDisplayer moduleDisplayer = new ModuleDisplayer(model, 2, gridSpec, gridSpec, new int[] {4, 1});
+		ModelDisplayer moduleDisplayer = new ModelDisplayer(model, 2, gridSpec, gridSpec, new int[] {4, 1});
 	}
 }

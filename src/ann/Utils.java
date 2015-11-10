@@ -1,12 +1,20 @@
 package ann;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.lang.reflect.Array;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import modeler.ModelLearner;
 import modeler.ModelLearnerHeavy;
 import modeler.ModelerModule;
+import modeler.TransitionMemory;
 
 
 public class Utils {
@@ -197,33 +205,36 @@ public class Utils {
 			return true;
 		}
 	}
-
-	// TODO save modeler: VTA & JDM BOTH!
-	public static void saveNetworkToFile(String namey, FFNeuralNetwork ann) {
+	
+	public static void saveObjectToFile(String namey, Serializable data) {
 		if (namey.isEmpty()) return;
 		try {
 			File file = new File("./saveFiles/"+namey);
 			FileOutputStream fileOut = new FileOutputStream(file);
 			if (!file.exists()) file.createNewFile();
 			ObjectOutputStream out = new ObjectOutputStream(fileOut);
-			out.writeObject(ann);
+			out.writeObject(data);
 			out.close();
 			fileOut.close();
 			System.out.println("Serialized data is saved in " + namey);
 		} catch(Exception e) {
 			e.printStackTrace();
-		}
+		}	
 	}
-	public static FFNeuralNetwork loadNetworkFromFile(String namey) {
+	public static void saveNetworkToFile(String namey, FFNeuralNetwork ann) {
+		saveObjectToFile(namey, ann);
+	}
+	
+	public static Object loadObjectFromFile(String namey) {
 		if (namey.isEmpty()) return null;
 		try {
 			FileInputStream fileIn = new FileInputStream("./saveFiles/"+namey);
 			ObjectInputStream in = new ObjectInputStream(fileIn);
 			Object result = in.readObject();
 			in.close();
-	         System.out.println("Loading data from " + namey);
+	        System.out.println("Loading data from " + namey);
 			fileIn.close();
-			return (FFNeuralNetwork) result;
+			return result;
 		} catch(FileNotFoundException e) {
 			System.out.println("No saved data found");
 			return null;
@@ -231,6 +242,13 @@ public class Utils {
 			System.out.println(e);
 			return null;
 		}
+	}
+	@SuppressWarnings("unchecked")
+	public static ArrayList<TransitionMemory> loadTrainingDataFromFile(String namey) {
+		return (ArrayList<TransitionMemory>) loadObjectFromFile(namey);
+	}
+	public static FFNeuralNetwork loadNetworkFromFile(String namey) {
+		return (FFNeuralNetwork) loadObjectFromFile(namey);
 	}
 
 	public static double sum(Collection<Double> ds) {

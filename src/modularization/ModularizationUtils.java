@@ -54,7 +54,7 @@ public class ModularizationUtils {
 			Collection<Node> lastNodes = new ArrayList<Node>();
 			for (Node input : inputs) {
 				IndirectInput rel = relMngr.getRel(input, output);
-				if (RelationManager.USED_RELS.contains(rel)) lastNodes.add(input);
+				if (relMngr.getUsedRels().contains(rel)) lastNodes.add(input);
 			}
 			for (int h = 0; h < hiddenPerOutput.length; h++) {
 				final int hidden = hiddenPerOutput[h];
