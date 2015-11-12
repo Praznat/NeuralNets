@@ -29,7 +29,7 @@ public abstract class Planner {
 	/** must use sigmoidal if representing probabilities 
 	 * @param actionTranslator 
 	 * @param stateTranslator */
-	public static Planner createMonteCarloPlanner(final ModelLearnerHeavy modeler, final int numSteps,
+	public static Planner createMonteCarloPlanner(final ModelLearner modeler, final int numSteps,
 			final int numRuns, final RewardFunction rewardFn, final boolean holdAction,
 			final double discountRate, final int jointAdjs,
 			final EnvTranslator stateTranslator, final EnvTranslator actionTranslator) {

@@ -75,11 +75,11 @@ public class ModelLearnerLite extends ModelLearner {
 	}
 	
 	@Override
-	public ModelerModule getFamiliarityModule() {
+	public ModelNeuralNet getFamiliarityModule() {
 		return getModelJCM();
 	}
 	@Override
-	public ModelerModule getTransitionsModule() {
+	public ModelNeuralNet getTransitionsModule() {
 		return getModelJCM();
 	}
 

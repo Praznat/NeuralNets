@@ -362,11 +362,11 @@ public class BasicTests {
 		return modeler;
 	}
 	
-	public static void testModelerModule(ModelLearnerHeavy ml, ModelerModule mm, TestInputGenerator tig, int times) {
+	public static void testModelerModule(ModelLearnerHeavy ml, ModelNeuralNet mm, TestInputGenerator tig, int times) {
 		for (int t = 0; t < times; t++) printForData(ml, mm, DataPoint.create(tig.generateTestInput(), null));
 	}
 	
-	public static void printForData(ModelLearnerHeavy ml, ModelerModule mm, DataPoint... data) {
+	public static void printForData(ModelLearnerHeavy ml, ModelNeuralNet mm, DataPoint... data) {
 		for (DataPoint dp : data) {
 			ml.observePreState(dp.getInput());
 			if (dp.getOutput() != null) ml.observePostState(dp.getOutput());

@@ -4,7 +4,7 @@ import java.util.*;
 
 import ann.*;
 
-public class JointDistributionModeler extends ModelerModule {
+public class JointDistributionModeler extends ModelNeuralNet {
 
 	protected boolean hasFamiliarityNode = false;
 	protected boolean shouldDisconnect = true;

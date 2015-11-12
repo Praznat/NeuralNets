@@ -2,7 +2,7 @@ package modeler;
 
 import ann.*;
 
-public class VariableTransitionApproximator extends ModelerModule {
+public class VariableTransitionApproximator extends ModelNeuralNet {
 	
 	public VariableTransitionApproximator(ActivationFunction actFn, int[] numHidden, int errorHalfLife) {
 		super(actFn, numHidden, errorHalfLife);

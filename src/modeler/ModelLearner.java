@@ -85,8 +85,8 @@ public abstract class ModelLearner {
 	}
 	public abstract double[] upJointOutput(double[] vars, int postStateIndex, int rounds);
 
-	public abstract ModelerModule getTransitionsModule();
-	public abstract ModelerModule getFamiliarityModule();
+	public abstract ModelNeuralNet getTransitionsModule();
+	public abstract ModelNeuralNet getFamiliarityModule();
 	
 	public void recordTraining() {
 		this.isRecordingTraining = true;
@@ -98,7 +98,7 @@ public abstract class ModelLearner {
 	
 	public double getPctMastered() {
 		double sum = 0;
-		ModelerModule vta = getTransitionsModule();
+		ModelNeuralNet vta = getTransitionsModule();
 		allmemo:
 		for (TransitionMemory tm : experienceReplay.getBatch()) {
 			observeAction(tm.action);

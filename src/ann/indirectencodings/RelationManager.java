@@ -14,7 +14,7 @@ import ann.Utils;
 import ann.testing.IGridGame;
 import modeler.ModelLearner;
 
-public class RelationManager {
+public class RelationManager<T> {
 	
 	private List<double[]> actionChoices;
 	
@@ -22,9 +22,9 @@ public class RelationManager {
 		this.actionChoices = actionChoices;
 	}
 	
-	private final Map<Node, IndirectInput> nodeMap = new HashMap<Node, IndirectInput>();
-	private final Map<NodePair, IndirectInput> relationMap = new HashMap<NodePair, IndirectInput>();
-	private final Map<Node, Map<IndirectInput, Node>> out2InNodeMap = new HashMap<Node, Map<IndirectInput, Node>>();
+	private final Map<T, IndirectInput> nodeMap = new HashMap<T, IndirectInput>();
+	private final Map<NodePair<T>, IndirectInput> relationMap = new HashMap<NodePair<T>, IndirectInput>();
+	private final Map<T, Map<IndirectInput, T>> out2InNodeMap = new HashMap<T, Map<IndirectInput, T>>();
 	private int actionClass = -1;
 	private IndirectInput nothing;
 	private IndirectInput right;
@@ -44,7 +44,7 @@ public class RelationManager {
 		Node outNode = conn.getOutputNode();
 		IndirectInput inV = nodeMap.get(inNode);
 		IndirectInput outV = nodeMap.get(outNode);
-		IndirectInput relV = relationMap.get(new NodePair(inNode, outNode));
+		IndirectInput relV = relationMap.get(new NodePair<Node>(inNode, outNode));
 		if (inV == null || outV == null || relV == null) return new double[] {};
 		return Utils.concat(inV.getVector(), outV.getVector(), relV.getVector());
 	}
@@ -54,39 +54,55 @@ public class RelationManager {
 				relationMap.values().iterator().next().getVector()).length;
 	}
 
-	public static RelationManager createFromGridGamePredictor(IGridGame game, ModelLearner modeler) {
+	public static RelationManager<Integer> createFromGridGamePredictor(IGridGame game, int inN, int outN) {
+		return createFromGridGamePredictor(game.getRows(), game.getCols(), game.getActionChoices(), inN, outN);
+	}
+	public static RelationManager<Integer> createFromGridGamePredictor(int nrows, int ncols, List<double[]> actionChoices,
+			int inN, int outN) {
+		ArrayList<Integer> inputNames = new ArrayList<Integer>();
+		ArrayList<Integer> outputNames = new ArrayList<Integer>();
+		for (int i = 0; i < inN; i++) inputNames.add(i);
+		for (int i = 0; i < outN; i++) outputNames.add(i);
+		return createFromGridGamePredictor(nrows, ncols, actionChoices, inputNames, outputNames);
+	}
+	public static RelationManager<Node> createFromGridGamePredictor(IGridGame game, ModelLearner modeler) {
 		return createFromGridGamePredictor(game.getRows(), game.getCols(), game.getActionChoices(), modeler);
 	}
-	public static RelationManager createFromGridGamePredictor(int nrows, int ncols, List<double[]> actionChoices,
+	public static RelationManager<Node> createFromGridGamePredictor(int nrows, int ncols, List<double[]> actionChoices,
 			ModelLearner modeler) {
-		RelationManager result = new RelationManager(actionChoices);
-		Map<Node, Integer> cols = new HashMap<Node, Integer>();
-		Map<Node, Integer> rows = new HashMap<Node, Integer>();
-		Map<Node, Integer> objClass = new HashMap<Node, Integer>();
 		FFNeuralNetwork predictor = modeler.getTransitionsModule().getNeuralNetwork();
 		ArrayList<? extends Node> inputNodes = predictor.getInputNodes();
 		ArrayList<? extends Node> outputNodes = predictor.getOutputNodes();
+		return createFromGridGamePredictor(nrows, ncols, actionChoices, inputNodes, outputNodes);
+	}
+	public static <T> RelationManager<T> createFromGridGamePredictor(int nrows, int ncols, List<double[]> actionChoices,
+			ArrayList<? extends T> inputs, ArrayList<? extends T> outputs) {
+		RelationManager<T> result = new RelationManager<T>(actionChoices);
+		Map<T, Integer> cols = new HashMap<T, Integer>();
+		Map<T, Integer> rows = new HashMap<T, Integer>();
+		Map<T, Integer> objClass = new HashMap<T, Integer>();
 
-		mapNodesToGeoSpace(cols, rows, objClass, inputNodes, ncols, nrows);
-		mapNodesToGeoSpace(cols, rows, objClass, outputNodes, ncols, nrows);
+
+		mapNodesToGeoSpace(cols, rows, objClass, inputs, ncols, nrows);
+		mapNodesToGeoSpace(cols, rows, objClass, outputs, ncols, nrows);
 		int numObjClasses = (new HashSet<Integer>(objClass.values())).size();
 		result.determineRelVectors(numObjClasses);
 		
-		int numO = (int) Math.ceil(((double)inputNodes.size()) / (ncols * nrows));
+		int numO = (int) Math.ceil(((double)inputs.size()) / (ncols * nrows));
 		
-		for (Node out : outputNodes) {
+		for (T out : outputs) {
 			int outC = cols.get(out);
 			int outR = rows.get(out);
 			int outO = objClass.get(out);
 			result.nodeMap.put(out, new IndirectInput(outC+","+outR+","+outR,
 					geoToVector(outC, ncols, outR, ncols, outO, numO)));
-			Map<IndirectInput, Node> iiToNode = new HashMap<IndirectInput, Node>();
+			Map<IndirectInput, T> iiToNode = new HashMap<IndirectInput, T>();
 			result.out2InNodeMap.put(out, iiToNode);
-			for (Node in : inputNodes) {
+			for (T in : inputs) {
 				int inC = cols.get(in);
 				int inR = rows.get(in);
 				int inO = objClass.get(in);
-				NodePair pair = new NodePair(in, out);
+				NodePair<T> pair = new NodePair<T>(in, out);
 				IndirectInput rel = result.nothing; // rel means out is REL of in
 				result.nodeMap.put(in, new IndirectInput(inC+","+inR+":"+inO,
 						geoToVector(inC, ncols, inR, ncols, inO, numO)));
@@ -142,12 +158,13 @@ public class RelationManager {
 		
 	}
 
-	public Node getRelNode(Node n, IndirectInput rel) {
-		return out2InNodeMap.get(n).get(rel);
+	/** get input to given output by relation */
+	public T getRelNode(T output, IndirectInput rel) {
+		return out2InNodeMap.get(output).get(rel);
 	}
 	
-	public IndirectInput getRel(Node inNode, Node outNode) {
-		return relationMap.get(new NodePair(inNode, outNode));
+	public IndirectInput getRel(T inNode, T outNode) {
+		return relationMap.get(new NodePair<T>(inNode, outNode));
 	}
 	
 	private static double[] geoToVector(int c, int numC, int r, int numR, int o, int numO) {
@@ -159,12 +176,12 @@ public class RelationManager {
 		return result;
 	}
 	
-	private static void mapNodesToGeoSpace(Map<Node, Integer> cols, Map<Node, Integer> rows,
-			Map<Node, Integer> objClass, ArrayList<? extends Node> nodes, int coln, int rown) {
+	private static <T> void mapNodesToGeoSpace(Map<T, Integer> cols, Map<T, Integer> rows,
+			Map<T, Integer> objClass, ArrayList<? extends T> nodes, int coln, int rown) {
 		int classI = 0;
 		int c = 0;
 		int r = 0;
-		for (Node n : nodes) {
+		for (T n : nodes) {
 			cols.put(n, c);
 			rows.put(n, r);
 			objClass.put(n, classI);

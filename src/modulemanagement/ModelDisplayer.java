@@ -17,7 +17,7 @@ import ann.FFNeuralNetwork;
 import ann.Utils;
 import ann.testing.GridGame;
 import modeler.ModelLearner;
-import modeler.ModelLearnerModular;
+import modeler.ModelLearnerModularImpure;
 import modularization.WeightPruner;
 
 public class ModelDisplayer<T extends ModelLearner> implements MouseListener {
@@ -40,7 +40,7 @@ public class ModelDisplayer<T extends ModelLearner> implements MouseListener {
 		this.grids = grids;
 		this.numVars = countVars();
 		this.modeler = modeler;
-		if (this.modeler instanceof ModelLearnerModular) {
+		if (this.modeler instanceof ModelLearnerModularImpure) {
 			System.out.println("WARNING: Consider useing ModuleDisplayer for ModelLearnerModular");
 		}
 		createJFrame();

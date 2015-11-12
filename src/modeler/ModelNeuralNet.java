@@ -6,7 +6,7 @@ import ann.*;
 import modularization.SoftWeightSharing;
 import utils.Decayer;
 
-public abstract class ModelerModule {
+public abstract class ModelNeuralNet {
 
 	private static final double NO_ERR_CHG_THRESH = 0.00000001;
 	private static final int STRIKES = 15000000;
@@ -20,7 +20,7 @@ public abstract class ModelerModule {
 	
 	private SoftWeightSharing wgtSharer;
 	
-	protected ModelerModule(ActivationFunction actFn, int[] numHidden, int errorHalfLife) {
+	protected ModelNeuralNet(ActivationFunction actFn, int[] numHidden, int errorHalfLife) {
 		ann = new FFNeuralNetwork(actFn, 0, 0, numHidden);
 		this.actFn = actFn;
 		decayer = new Decayer(errorHalfLife);

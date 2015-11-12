@@ -1,205 +1,71 @@
 package modulemanagement;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeSet;
 
-import ann.FFNeuralNetwork;
-import ann.Node;
-import ann.Utils;
 import ann.indirectencodings.RelationManager;
 import modeler.ModelLearner;
 import modeler.TransitionMemory;
 
-public class ModuleManager {
+public abstract class ModuleManager<T> {
 
-	private final Map<Node, ModuleDistribution> nodeModules = new HashMap<Node, ModuleDistribution>();
-	private final Collection<ReusableModule> allModules = new HashSet<ReusableModule>();
-	private final Set<ModelLearner> modelersSeen = new HashSet<ModelLearner>();
+	protected final Map<T, ModuleDistribution<T>> nodeModules = new HashMap<T, ModuleDistribution<T>>();
+	protected final Collection<ReusableModule<T>> allModules = new HashSet<ReusableModule<T>>();
+	protected final TreeSet<OutputScore<T>> outputScores = new TreeSet<OutputScore<T>>();
 	
-	private double loErrorThresh = 0.1;
-	private double hiErrorThresh = 0.4;
-	private TreeSet<OutputError> outputErrors = new TreeSet<OutputError>();
-
-	/**
-	 * low thresh determines how low error must be in order to create new module
-	 * high thresh determines how low error must be in order to reuse old module
-	 */
-	public ModuleManager(double loThresh, double hiThresh) {
-		this.loErrorThresh = loThresh;
-		this.hiErrorThresh = hiThresh;
-	}
-	
-	/** return output activations given state and action inputs */
-	public double[] getOutputs(ModelLearner modeler, RelationManager relMngr, double[] stateVars, double[] action) {
-		double[] inputs = Utils.concat(stateVars, action);
-		FFNeuralNetwork neuralNetwork = getModelNetwork(modeler);
-		FFNeuralNetwork.feedForward(neuralNetwork.getInputNodes(), inputs);
-		ArrayList<? extends Node> outputNodes = neuralNetwork.getOutputNodes();
-		double[] outputs = new double[stateVars.length];
-		int i = 0;
-		for (Node output : outputNodes) {
-			ModuleDistribution moduleDist = nodeModules.get(output);
-			// if no module use original network output
-			if (moduleDist == null) {
-				outputs[i] = output.getActivation();
-			}
-			// if module use module output
-			else {
-				outputs[i] = moduleDist.getMostLikelyModule().evaluateOutput(output, relMngr);
-			}
-			i++;
-		}
-		return outputs;
-	}
-
-	public void processFullModel(ModelLearner modeler, RelationManager relMngr, int numTransitions, int times) {
+	public abstract double[] getOutputs(ModelLearner modeler, RelationManager<T> relMngr, double[] stateVars, double[] action);
+	public abstract void processFullModel(ModelLearner modeler, RelationManager<T> relMngr, int numTransitions);
+	public void processFullModel(ModelLearner modeler, RelationManager<T> relMngr, int numTransitions, int times) {
 		for (int i = 0; i < times; i++) processFullModel(modeler, relMngr, numTransitions);
 	}
-	public void processFullModel(ModelLearner modeler, RelationManager relMngr, int numTransitions) {
-		Collection<TransitionMemory> transitions = modeler.getExperience().getBatch(numTransitions, true);
-		FFNeuralNetwork neuralNetwork = modeler.getTransitionsModule().getNeuralNetwork();
-		ArrayList<? extends Node> outputNodes = neuralNetwork.getOutputNodes();
-		if (!modelersSeen.contains(modeler)) {
-			int s = modelersSeen.size();
-			int i = 0;
-			for (Node n : outputNodes) n.setName(buffString(s + i++/100.0 + "", 4));
-			modelersSeen.add(modeler);
-		}
-		double[] errors = new double[outputNodes.size()];
-		for (TransitionMemory tm : transitions) {
-			FFNeuralNetwork.feedForward(neuralNetwork.getInputNodes(), tm.getPreStateAndAction());
-			double[] observed = tm.getPostState();
-			int i = 0;
-			for (Node output : outputNodes) {
-				ModuleDistribution moduleDist = nodeModules.get(output);
-				// if no module use original network error
-				if (moduleDist == null) errors[i] += Math.abs(output.getActivation() - observed[i]);
-				// if module use module error
-				else {
-					errors[i] = calcErrorFromTransition(moduleDist.getMostLikelyModule(), relMngr, tm, modeler, output, i);
-				}
-				i++;
-			}
-		}
-		int n = transitions.size();
-		outputErrors.clear();
-		for (int i = 0; i < errors.length; i++) {
-			outputErrors.add(new OutputError(outputNodes.get(i), errors[i] / n + (Math.random()-.5)/1000000, i));
-		}
-		respondToErrors(outputErrors, modeler, relMngr, transitions);
-	}
-
-	private void respondToErrors(TreeSet<OutputError> outputErrors, ModelLearner modeler,
-			RelationManager relMngr, Collection<TransitionMemory> transitions) {
-		for (OutputError outputError : outputErrors) {
-			final double error = outputError.error;
-			final Node output = outputError.output;
-			final int i = outputError.key;
-//			System.out.println(output + "	" + error);
-			if (error < loErrorThresh) {
-				// dont worry if it already has module
-				if (nodeModules.get(output) != null) continue;
-				// pick best existing module
-				ModuleDistribution moduleDist = recalcModuleDistribution(modeler, relMngr, output, i, transitions);
-				if (moduleDist != null && moduleDist.getLowestError() < error) nodeModules.put(output, moduleDist);
-				// create new module if no existing ones work
-				else {
-//					System.out.println("new module created for " + output);
-					ReusableModule module = ReusableModule.createNeighborHoodModule(modeler, relMngr,
-							getModelNetwork(modeler), output);
-					allModules.add(module);
-					nodeModules.put(output, new ModuleDistribution(module, error));
-				}
-			} else if (error < hiErrorThresh) {
-				// pick best module if lower than current error
-				ModuleDistribution moduleDist = recalcModuleDistribution(modeler, relMngr, output, i, transitions);
-				if (moduleDist != null && moduleDist.getLowestError() < error) nodeModules.put(output, moduleDist);
-			}
-		}
+	
+	public Map<T, ModuleDistribution<T>> getNodeModules() {
+		return nodeModules;
 	}
 	
-	private ModuleDistribution recalcModuleDistribution(ModelLearner modeler, RelationManager relMngr,
-			Node output, int outputKey, Collection<TransitionMemory> transitions) {
-		ModuleDistribution result = new ModuleDistribution();
-		if (allModules.isEmpty()) return null;
-		for (ReusableModule module : allModules) {
-			double error = 0;
-			for (TransitionMemory tm : transitions) {
-				error += calcErrorFromTransition(module, relMngr, tm, modeler, output, outputKey);
-			}
-			error /= transitions.size();
-			result.addModule(module, error);
+	protected ModuleDistribution<T> recalcModuleDistribution(ModuleDistribution<T> result, ModelLearner modeler,
+			RelationManager<T> relMngr, T output, int outputKey, Collection<TransitionMemory> transitions) {
+		if (allModules.isEmpty()) return result;
+		result.clear();
+		for (ReusableModule<T> module : allModules) {
+			double score = calcScoresFromTransition(module, relMngr, transitions, modeler, output, outputKey);
+			result.addModule(module, score);
 		}
 		return result;
 	}
+	protected double calcScoresFromTransition(ReusableModule<T> module, RelationManager<T> relMngr,
+			Collection<TransitionMemory> transitions, ModelLearner modeler, T output, int outputKey) {
+		double score = 0;
+		for (TransitionMemory tm : transitions) {
+			score += calcScoreFromTransition(module, relMngr, tm, modeler, output, outputKey);
+		}
+		score /= transitions.size();
+		return score;
+	}
+	protected abstract double calcScoreFromTransition(ReusableModule<T> module, RelationManager<T> relMngr, TransitionMemory tm,
+			ModelLearner modeler, T output, int outputKey);
 	
-	public ReusableModule getModuleUsedBy(Node output) {
-		return nodeModules.get(output).getMostLikelyModule();
+	protected void addOutputScore(T t, double score, int key) {
+		outputScores.add(new OutputScore<T>(t, score + (Math.random()-.5)/1000000, key));
 	}
 	
-	private double calcErrorFromTransition(ReusableModule module, RelationManager relMngr, TransitionMemory tm,
-			ModelLearner modeler, Node output, int outputKey) {
-		double[] input = tm.getPreStateAndAction();
-		
-		ArrayList<? extends Node> inputNodes = getModelNetwork(modeler).getInputNodes();
-		int i = 0;
-		for (Node n : inputNodes) n.clamp(input[i++]);
-		
-		final double predicted = module.evaluateOutput(output, relMngr);
-		final double observed = tm.getPostState()[outputKey];
-		return Math.abs(observed - predicted);
-	}
-	
-	private static FFNeuralNetwork getModelNetwork(ModelLearner model) {
-		return model.getTransitionsModule().getNeuralNetwork();
-	}
-	
-	private static String buffString(String s, int len) {
-		int r = len - s.length();
-		for (int i = 0; i < r; i++) s = s.toString() + "0";
-		return s.substring(0, len);
-	}
-
 	public void report() {
 		System.out.println("Reporting on Module Manager");
 		System.out.println(allModules.size() + " modules total");
-		TreeSet<OutputError> ordered = new TreeSet<OutputError>(new Comparator<OutputError>() {
+		TreeSet<OutputScore<T>> ordered = new TreeSet<OutputScore<T>>(new Comparator<OutputScore<T>>() {
 			@Override
-			public int compare(OutputError arg0, OutputError arg1) {
+			public int compare(OutputScore<T> arg0, OutputScore<T> arg1) {
+				if (arg0.output instanceof Integer) return Integer.compare((int)arg0.output, (int)arg1.output);
 				return arg0.output.toString().compareTo(arg1.output.toString());
 			}
 		});
-		ordered.addAll(outputErrors);
-		for (OutputError n : ordered) {
-			System.out.println(n.output + "	" + nodeModules.get(n.output) + "	err:	" + n.error);
-		}
-	}
-	
-	public Map<Node, ModuleDistribution> getNodeModules() {
-		return nodeModules;
-	}
-
-	private static class OutputError implements Comparable<OutputError> {
-		
-		private Node output;
-		private double error;
-		private int key;
-
-		public OutputError(Node output, double error, int key) {
-			this.output = output;
-			this.error = error;
-			this.key = key;
-		}
-
-		@Override
-		public int compareTo(OutputError o) {
-			return Double.compare(this.error, o.error);
+		ordered.addAll(outputScores);
+		for (OutputScore<T> n : ordered) {
+			System.out.println(n.output + "	" + nodeModules.get(n.output) + "	score:	" + n.score);
 		}
 	}
 }

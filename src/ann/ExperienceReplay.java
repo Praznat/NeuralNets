@@ -25,6 +25,7 @@ public class ExperienceReplay<T extends ExperienceReplay.Memory> {
 	}
 
 	public Collection<T> getBatch(int size, boolean resample) {
+		if (size >= dataMemory.size()) return getBatch(); // efficienter
 		Collection<T> result = new ArrayList<T>();
 		Collection<T> replace = new ArrayList<T>();
 		for (int i = 0; i < size; i++) {
@@ -42,7 +43,9 @@ public class ExperienceReplay<T extends ExperienceReplay.Memory> {
 	}
 
 	public Collection<T> getBatch() {
-		return getBatch(dataMemory.size(), false);
+		Collections.shuffle(dataMemory);
+		return dataMemory;
+//		return getBatch(dataMemory.size(), false);
 	}
 	
 	public boolean isFull() {

@@ -1,16 +1,17 @@
 package modeler;
 
+import ann.Node;
 import ann.indirectencodings.RelationManager;
-import modulemanagement.ModuleManager;
+import modulemanagement.ModuleManagerImpure;
 
-public class ModelLearnerModular extends ModelLearnerHeavy {
+public class ModelLearnerModularImpure extends ModelLearnerHeavy {
 
-	private final ModuleManager moduleManager;
-	private final RelationManager relMngr;
+	private final ModuleManagerImpure moduleManager;
+	private final RelationManager<Node> relMngr;
 	private int processTransitions;
 	private int processTimes;
 
-	public ModelLearnerModular(ModelLearnerHeavy base, RelationManager relMngr, ModuleManager moduleManager,
+	public ModelLearnerModularImpure(ModelLearnerHeavy base, RelationManager<Node> relMngr, ModuleManagerImpure moduleManager,
 			int processTransitions, int processTimes) {
 		super(base.errorHalfLife, new int[] {}, null, null, base.actFn, base.maxReplaySize);
 		this.relMngr = relMngr;
@@ -39,11 +40,11 @@ public class ModelLearnerModular extends ModelLearnerHeavy {
 		moduleManager.processFullModel(this, relMngr, processTransitions, processTimes);
 	}
 
-	public ModuleManager getModuleManager() {
+	public ModuleManagerImpure getModuleManager() {
 		return moduleManager;
 	}
 
-	public RelationManager getRelMngr() {
+	public RelationManager<Node> getRelMngr() {
 		return relMngr;
 	}
 }

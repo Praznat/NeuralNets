@@ -85,6 +85,7 @@ public class FFNeuralNetwork implements NeuralNetwork, Serializable {
 		}
 		return Math.sqrt(sumErr / data.size());
 	}
+	/** sqrt of mean square error for one obs */
 	public static double getError(double[] target, Collection<? extends Node> outputNodes) {
 		double error = 0;
 		for (int i = 0; i < target.length; i++) {

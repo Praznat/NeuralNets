@@ -2,7 +2,7 @@ package modeler;
 
 import ann.*;
 
-public class JointAndConditionalModeler extends ModelerModule {
+public class JointAndConditionalModeler extends ModelNeuralNet {
 
 	protected JointAndConditionalModeler(ActivationFunction actFn, int[] numHidden, int errorHalfLife) {
 		super(actFn, numHidden, errorHalfLife);

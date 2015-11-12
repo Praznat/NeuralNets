@@ -1,13 +1,11 @@
 package ann.indirectencodings;
 
-import ann.Node;
-
-public class NodePair {
+public class NodePair<T> {
 	
-	private Node n1;
-	private Node n2;
+	private T n1;
+	private T n2;
 
-	public NodePair(Node n1, Node n2) {
+	public NodePair(T n1, T n2) {
 		this.n1 = n1;
 		this.n2 = n2;
 		
@@ -21,8 +19,9 @@ public class NodePair {
 	@Override
 	public boolean equals(Object other) {
 		if (this == other) return true;
-		if (other instanceof NodePair) {
-			NodePair onode = (NodePair) other;
+		if (other instanceof NodePair<?>) {
+			@SuppressWarnings("unchecked")
+			NodePair<T> onode = (NodePair<T>) other;
 			return this.n1.equals(onode.n1) && this.n2.equals(onode.n2);
 		}
 		return false;

@@ -250,11 +250,11 @@ public class ModelLearnerHeavy extends ModelLearner {
 	}
 
 	@Override
-	public ModelerModule getFamiliarityModule() {
+	public ModelNeuralNet getFamiliarityModule() {
 		return getModelJDM();
 	}
 	@Override
-	public ModelerModule getTransitionsModule() {
+	public ModelNeuralNet getTransitionsModule() {
 		return getModelVTA();
 	}
 

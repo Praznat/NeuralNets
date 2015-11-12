@@ -3,7 +3,7 @@ package modeler;
 import ann.*;
 import utils.RandomUtils;
 
-public class TransitionFamiliarityAssessor extends ModelerModule {
+public class TransitionFamiliarityAssessor extends ModelNeuralNet {
 
 	protected TransitionFamiliarityAssessor(ActivationFunction actFn, int[] numHidden, int errorHalfLife) {
 		super(actFn, numHidden, errorHalfLife);

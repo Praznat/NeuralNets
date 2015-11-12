@@ -3,41 +3,40 @@ package modulemanagement;
 import java.util.TreeSet;
 
 /**
- * stores the modules tested and their errors (for an output node)
- * high entropy means high faith in the lowest error module
+ * stores the modules tested and their likelihood scores (for an output node)
+ * low entropy means high faith in the highest score module (I think?)
  * one geographic strategy may be to learn RELs between nodes using the same modules,
  * then when a node with low entropy distribution has such a REL with a node with
- * high entropy distribution, it can "adopt" the distribution from its high entropy neighbor
+ * low entropy distribution, it can "adopt" the distribution from its low entropy neighbor
  */
-public class ModuleDistribution {
+public class ModuleDistribution<T> {
 
-	private final TreeSet<ModuleError> moduleErrors = new TreeSet<ModuleError>();
+	private final TreeSet<ModuleScore<T>> moduleScores = new TreeSet<ModuleScore<T>>();
 	
 	public ModuleDistribution() {}
-	public ModuleDistribution(ReusableModule module, double error) {
-		addModule(module, error);
+	public ModuleDistribution(ReusableModule<T> module, double score) {
+		addModule(module, score);
 	}
 	
-	public void addModule(ReusableModule module, double error) {
-		moduleErrors.add(new ModuleError(module, error));
+	public void addModule(ReusableModule<T> module, double score) {
+		moduleScores.add(new ModuleScore<T>(module, score));
 	}
 	
-	/**
-	 * this is not probability entropy. this is error entropy. somehow it works.
-	 * the higher this is, the MORE confidence in its best module (relative to other modules)
-	 */
+	// because score should basically be likelihood
 	public double getEntropy() {
 		double sum = 0;
-		for (ModuleError err : moduleErrors) sum += err.error * Math.log(err.error);
+		for (ModuleScore<T> ms : moduleScores) sum += ms.score * Math.log(ms.score);
 		return -sum;
 	}
 
-	public ReusableModule getMostLikelyModule() {
-		return moduleErrors.first().module;
+	public ReusableModule<T> getMostLikelyModule() {
+		if (moduleScores.isEmpty()) return null;
+		return moduleScores.last().module;
 	}
 	
-	public double getLowestError() {
-		return moduleErrors.first().error;
+	public double getHighestScore() {
+		if (moduleScores.isEmpty()) return 0;
+		return moduleScores.last().score;
 	}
 	
 	@Override
@@ -45,19 +44,29 @@ public class ModuleDistribution {
 		return getMostLikelyModule().toString();
 	}
 	
-	private static class ModuleError implements Comparable<ModuleError> {
+	private static class ModuleScore<T> implements Comparable<ModuleScore<T>> {
 		
-		private ReusableModule module;
-		private double error;
+		private ReusableModule<T> module;
+		private double score;
 
-		public ModuleError(ReusableModule module, double error) {
+		public ModuleScore(ReusableModule<T> module, double score) {
 			this.module = module;
-			this.error = error;
+			this.score = score;
 		}
 
 		@Override
-		public int compareTo(ModuleError o) {
-			return Double.compare(this.error, o.error);
+		public int compareTo(ModuleScore<T> o) {
+			return Double.compare(this.score, o.score);
 		}
+	}
+
+	public boolean isEmpty() {
+		return moduleScores.isEmpty();
+	}
+	public void clear() {
+		moduleScores.clear();
+	}
+	public int size() {
+		return moduleScores.size();
 	}
 }

@@ -3,33 +3,31 @@ package modulemanagement;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeSet;
 
 import ann.FFNeuralNetwork;
 import ann.Node;
 import ann.Utils;
 import ann.testing.GridGame;
-import modeler.ModelLearnerModular;
+import modeler.ModelLearnerModularImpure;
 import modularization.WeightPruner;
 
-public class ModuleDisplayer extends ModelDisplayer<ModelLearnerModular> {
+public class ModuleDisplayer extends ModelDisplayer<ModelLearnerModularImpure> {
 
 	private static final Color[] COLORS = new Color[] {
 			Color.BLUE, Color.RED, Color.GREEN, Color.YELLOW, Color.CYAN, Color.MAGENTA, Color.ORANGE, Color.PINK,
 			new Color(128, 0, 128)
 	};
-	private Map<Node, ModuleDistribution> nodeModules;
-	private Map<ReusableModule, Color> modulesColored = new HashMap<ReusableModule, Color>();
+	private Map<Node, ModuleDistribution<Node>> nodeModules;
+	private Map<ReusableNNModule, Color> modulesColored = new HashMap<ReusableNNModule, Color>();
 	private ArrayList<? extends Node> outputNodes = new ArrayList<Node>();
 
-	public ModuleDisplayer(ModelLearnerModular modeler, int actGrid, GridGame game) {
+	public ModuleDisplayer(ModelLearnerModularImpure modeler, int actGrid, GridGame game) {
 		super(modeler, actGrid, game);
 		setup();
 	}
-	public ModuleDisplayer(ModelLearnerModular modeler, int actGrid, int[][] grids) {
+	public ModuleDisplayer(ModelLearnerModularImpure modeler, int actGrid, int[][] grids) {
 		super(modeler, actGrid, grids);
 		setup();
 	}
@@ -46,13 +44,13 @@ public class ModuleDisplayer extends ModelDisplayer<ModelLearnerModular> {
 		System.out.println(v);
 		Node outputNode = outputNodes.get(v);
 		System.out.println(outputNode);
-		ModuleDistribution dist = nodeModules.get(outputNode);
-		ReusableModule module = dist != null ? dist.getMostLikelyModule() : null;
+		ModuleDistribution<Node> dist = nodeModules.get(outputNode);
+		ReusableNNModule module = (ReusableNNModule) (dist != null ? dist.getMostLikelyModule() : null);
 		g.setColor(getColor(module));
 		g.fillRect(c*gUnit+1, r*gUnit+1, gUnit-2, gUnit-2);
 	}
 	
-	private Color getColor(ReusableModule module) {
+	private Color getColor(ReusableNNModule module) {
 		if (module == null) return Color.WHITE;
 		Color c = modulesColored.get(module);
 		System.out.println(module);

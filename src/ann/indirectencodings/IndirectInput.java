@@ -24,6 +24,20 @@ public class IndirectInput implements Serializable {
 	}
 	
 	@Override
+	public int hashCode() {
+		return name.hashCode();
+	}
+	
+	@Override
+	public boolean equals(Object other) {
+		if (this == other) return true;
+		if (other instanceof IndirectInput) {
+			return this.name.equals(((IndirectInput)other).name);
+		}
+		return false;
+	}
+	
+	@Override
 	public String toString() {
 		return name;
 	}
