@@ -1,5 +1,6 @@
 package modulemanagement;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -19,26 +20,28 @@ public class ModuleManagerPure extends ModuleManager<Integer> {
 	
 	private static final double MIN_SCORE = 0.98;
 
-	private static final int[] numHidden = new int[] {20};
+	private final int maxCrunchPerRound;
+	private final int[] numHidden;
+	private final int nnTrainingEpochs;
 	private final double lRate;
 	private final double mRate;
 	private final double sRate;
-	private static final int epochs = 20;
-
-	
-	private int maxCrunchPerRound;
-	private List<Integer> shuffledOutK;
-	private int numTransitions;
-	private ModelLearner loadedModeler;
 	private Map<ModelLearner, TreeSet<OutputScore<Integer>>> oldOutputScores
 		= new HashMap<ModelLearner, TreeSet<OutputScore<Integer>>>();
 	private Map<ModelLearner, Map<Integer, ModuleDistribution<Integer>>> oldNodeModules
 		= new HashMap<ModelLearner, Map<Integer, ModuleDistribution<Integer>>>();
 	
+	private List<Integer> shuffledOutK;
+	private int numTransitions;
+	private ModelLearner loadedModeler;
+	
 	/** maxCrunchPerRound specifies how many new modules you can learn in a round */
 	// TODO have max number of modules?
-	public ModuleManagerPure(int maxCrunchPerRound, double lRate, double mRate, double sRate) {
+	public ModuleManagerPure(int maxCrunchPerRound, double lRate, double mRate, double sRate,
+			int[] numHidden, int nnTrainingEpochs) {
 		this.maxCrunchPerRound = maxCrunchPerRound;
+		this.numHidden = numHidden;
+		this.nnTrainingEpochs = nnTrainingEpochs;
 		this.lRate = lRate;
 		this.mRate = mRate;
 		this.sRate = sRate;
@@ -96,7 +99,7 @@ public class ModuleManagerPure extends ModuleManager<Integer> {
 		// build a new module
 		if (moduleDistribution.getHighestScore() < MIN_SCORE && crunchesLeft.getAndDecrement() > 0) {
 			ReusableIntModule newModule = ReusableIntModule.createNeighborHoodModule(modeler, relMngr,
-					outK, numHidden, epochs, lRate, mRate, sRate);
+					outK, numHidden, nnTrainingEpochs, lRate, mRate, sRate);
 			allModules.add(newModule);
 			double score = calcScoresFromTransition(newModule, relMngr, experience, modeler, outK, outK);
 			// store the new module in the distribution
@@ -164,13 +167,57 @@ public class ModuleManagerPure extends ModuleManager<Integer> {
 		return (ReusableIntModule) nodeModules.get(output).getMostLikelyModule();
 	}
 
-	private ReusableIntModule getOldBest(int k) {
+	@SuppressWarnings("unused")
+	private ReusableIntModule getOldBest(int k) { // for debugging
 		if (oldNodeModules.isEmpty()) return null;
 		ModuleDistribution<Integer> oldBestDist = oldNodeModules.values().iterator().next().get(k);
 		if (oldBestDist != null) {
 			return (ReusableIntModule) oldBestDist.getMostLikelyModule();
 		} else {
 			return null;
+		}
+	}
+	
+	public static void saveState(ModuleManagerPure mmp, String namey) {
+		SaveState ss = new SaveState(mmp.nodeModules, mmp.allModules, mmp.outputScores,
+				mmp.maxCrunchPerRound, mmp.numHidden, mmp.nnTrainingEpochs, mmp.lRate, mmp.mRate, mmp.sRate);
+		Utils.saveObjectToFile(namey, ss);
+	}
+	
+	public static ModuleManagerPure loadState(String namey) {
+		SaveState ss = (SaveState) Utils.loadObjectFromFile(namey);
+		ModuleManagerPure result = new ModuleManagerPure(ss.maxCrunch, ss.lRate, ss.mRate, ss.sRate,
+				ss.numHidden, ss.nnTrainingEpochs);
+		result.nodeModules.putAll(ss.nodeModules);
+		result.allModules.addAll(ss.allModules);
+		result.outputScores.addAll(ss.outputScores);
+		return result;
+	}
+	
+	@SuppressWarnings("serial")
+	private static class SaveState implements Serializable {
+		private Map<Integer, ModuleDistribution<Integer>> nodeModules;
+		private Collection<ReusableModule<Integer>> allModules;
+		private TreeSet<OutputScore<Integer>> outputScores;
+		private int maxCrunch;
+		private int[] numHidden;
+		private double lRate;
+		private int nnTrainingEpochs;
+		private double mRate;
+		private double sRate;
+
+		private SaveState(Map<Integer, ModuleDistribution<Integer>> nodeModules,
+				Collection<ReusableModule<Integer>> allModules, TreeSet<OutputScore<Integer>> outputScores,
+				int maxCrunch, int[] numHidden, int nnTrainingEpochs, double lRate, double mRate, double sRate) {
+					this.nodeModules = nodeModules;
+					this.allModules = allModules;
+					this.outputScores = outputScores;
+					this.maxCrunch = maxCrunch;
+					this.numHidden = numHidden;
+					this.nnTrainingEpochs = nnTrainingEpochs;
+					this.lRate = lRate;
+					this.mRate = mRate;
+					this.sRate = sRate;
 		}
 	}
 }

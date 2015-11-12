@@ -109,10 +109,6 @@ public class T7HyperModelTest {
 		}
 		transferScore /= n;
 		sb.append("	Transfer	" + transferScore + '\n');
-
-		ModelDisplayer modelDisplayer1 = new ModelDisplayer(fullModel, 2, targetGame);
-		ModelDisplayer modelDisplayer2 = new ModelDisplayer(reuseModel, 2, targetGame);
-		ModuleDisplayer moduleDisplayer = new ModuleDisplayer(reuseModel, 2, targetGame);
 		
 		return transferScore;
 	}
@@ -133,7 +129,7 @@ public class T7HyperModelTest {
 		int outN = vtaNN.getOutputNodes().size();
 		RelationManager<Integer> catcherRelMngr = RelationManager.createFromGridGamePredictor(sourceGame, inN, outN);
 		
-		ModuleManagerPure mmm = new ModuleManagerPure(20, 0.3, 0.5, 0);
+		ModuleManagerPure mmm = new ModuleManagerPure(20, 0.3, 0.5, 0, new int[] {20}, 20);
 		int processTimes = 3;
 		mmm.processFullModel(sourceGame.modeler, catcherRelMngr, trainTurns, processTimes);
 		mmm.report();
@@ -160,6 +156,10 @@ public class T7HyperModelTest {
 		transferScore /= n;
 		sb.append("	Transfer	" + transferScore + '\n');
 
+//		ModelDisplayer modelDisplayer1 = new ModelDisplayer(fullModel, 2, targetGame);
+//		ModelDisplayer modelDisplayer2 = new ModelDisplayer(reuseModel, 2, targetGame);
+		ModuleDisplayer moduleDisplayer = new ModuleDisplayer(reuseModel, 2, targetGame);
+		
 		return transferScore;
 	}
 	

@@ -2,39 +2,35 @@ package modulemanagement;
 
 import java.awt.Color;
 import java.awt.Graphics;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import ann.FFNeuralNetwork;
-import ann.Node;
 import ann.Utils;
 import ann.testing.GridGame;
-import modeler.ModelLearnerModularImpure;
+import modeler.ModelLearnerModularPure;
 import modularization.WeightPruner;
 
-public class ModuleDisplayer extends ModelDisplayer<ModelLearnerModularImpure> {
+public class ModuleDisplayer extends ModelDisplayer<ModelLearnerModularPure> {
 
 	private static final Color[] COLORS = new Color[] {
 			Color.BLUE, Color.RED, Color.GREEN, Color.YELLOW, Color.CYAN, Color.MAGENTA, Color.ORANGE, Color.PINK,
 			new Color(128, 0, 128)
 	};
-	private Map<Node, ModuleDistribution<Node>> nodeModules;
-	private Map<ReusableNNModule, Color> modulesColored = new HashMap<ReusableNNModule, Color>();
-	private ArrayList<? extends Node> outputNodes = new ArrayList<Node>();
+	private Map<Integer, ModuleDistribution<Integer>> nodeModules;
+	private Map<ReusableIntModule, Color> modulesColored = new HashMap<ReusableIntModule, Color>();
 
-	public ModuleDisplayer(ModelLearnerModularImpure modeler, int actGrid, GridGame game) {
+	public ModuleDisplayer(ModelLearnerModularPure modeler, int actGrid, GridGame game) {
 		super(modeler, actGrid, game);
 		setup();
 	}
-	public ModuleDisplayer(ModelLearnerModularImpure modeler, int actGrid, int[][] grids) {
+	public ModuleDisplayer(ModelLearnerModularPure modeler, int actGrid, int[][] grids) {
 		super(modeler, actGrid, grids);
 		setup();
 	}
 	
 	private void setup() {
 		nodeModules = modeler.getModuleManager().getNodeModules();
-		outputNodes = modeler.getModelVTA().getNeuralNetwork().getOutputNodes();
 	}
 	
 	// paint by module used
@@ -42,15 +38,13 @@ public class ModuleDisplayer extends ModelDisplayer<ModelLearnerModularImpure> {
 	protected void paintPredVar(int r, int c, Graphics g, int v) {
 		super.paintPredVar(r, c, g, v);
 		System.out.println(v);
-		Node outputNode = outputNodes.get(v);
-		System.out.println(outputNode);
-		ModuleDistribution<Node> dist = nodeModules.get(outputNode);
-		ReusableNNModule module = (ReusableNNModule) (dist != null ? dist.getMostLikelyModule() : null);
+		ModuleDistribution<Integer> dist = nodeModules.get(v);
+		ReusableIntModule module = (ReusableIntModule) (dist != null ? dist.getMostLikelyModule() : null);
 		g.setColor(getColor(module));
 		g.fillRect(c*gUnit+1, r*gUnit+1, gUnit-2, gUnit-2);
 	}
 	
-	private Color getColor(ReusableNNModule module) {
+	private Color getColor(ReusableIntModule module) {
 		if (module == null) return Color.WHITE;
 		Color c = modulesColored.get(module);
 		System.out.println(module);
@@ -66,6 +60,11 @@ public class ModuleDisplayer extends ModelDisplayer<ModelLearnerModularImpure> {
 		}
 		System.out.println();
 		return c;
+	}
+	
+	@Override
+	protected void showSingleVarDependencies(final int varKey) {
+		// TODO draw module neural net? print wgt matrices?
 	}
 
 	@Override

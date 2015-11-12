@@ -69,7 +69,7 @@ public class ModelDisplayer<T extends ModelLearner> implements MouseListener {
 		centerToVar.put(p, v);
 	}
 	
-	private void showSingleVarDependencies(final int varKey) {
+	protected void showSingleVarDependencies(final int varKey) {
 		outPanel.setModulePainter(createModulePainter(varKey));
 		outPanel.repaint();
 	}

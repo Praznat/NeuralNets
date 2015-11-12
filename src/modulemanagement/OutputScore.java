@@ -1,6 +1,9 @@
 package modulemanagement;
 
-public class OutputScore<T> implements Comparable<OutputScore<T>> {
+import java.io.Serializable;
+
+@SuppressWarnings("serial")
+public class OutputScore<T> implements Comparable<OutputScore<T>>, Serializable {
 	
 	T output;
 	double score;

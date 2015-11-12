@@ -1,5 +1,6 @@
 package modulemanagement;
 
+import java.io.Serializable;
 import java.util.TreeSet;
 
 /**
@@ -9,7 +10,8 @@ import java.util.TreeSet;
  * then when a node with low entropy distribution has such a REL with a node with
  * low entropy distribution, it can "adopt" the distribution from its low entropy neighbor
  */
-public class ModuleDistribution<T> {
+@SuppressWarnings("serial")
+public class ModuleDistribution<T> implements Serializable {
 
 	private final TreeSet<ModuleScore<T>> moduleScores = new TreeSet<ModuleScore<T>>();
 	
@@ -44,7 +46,7 @@ public class ModuleDistribution<T> {
 		return getMostLikelyModule().toString();
 	}
 	
-	private static class ModuleScore<T> implements Comparable<ModuleScore<T>> {
+	private static class ModuleScore<T> implements Comparable<ModuleScore<T>>, Serializable {
 		
 		private ReusableModule<T> module;
 		private double score;
