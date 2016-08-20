@@ -169,7 +169,7 @@ public class GridTagGame extends GridGame {
 		game.setOpponentRule(game.mostlyClockwise);
 		game.setPlayerPos(size-1, size-1);
 		game.setOpponentPos(0, 0);
-		BiasNode.clearConnections();
+//		BiasNode.clearConnections();
 		
 		for (int t = 0; t < trainTurns; t++) {
 			game.chosenAction = explorer.getOptimalAction(game.getState(), game.actionChoices, 0, 0);

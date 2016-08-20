@@ -16,6 +16,7 @@ import ann.Utils;
 import ann.indirectencodings.IndirectInput;
 import ann.indirectencodings.RelationManager;
 import modeler.TransitionMemory;
+import reasoner.DiscreteState;
 
 /**
  * Given the key of some output variable, it looks up the keys to related input variables.
@@ -25,7 +26,7 @@ import modeler.TransitionMemory;
 @SuppressWarnings("serial")
 public abstract class ReusableModule<T> implements Serializable {
 	
-	protected final Collection<IndirectInput> relations = new ArrayList<IndirectInput>();
+	protected final ArrayList<IndirectInput> relations = new ArrayList<IndirectInput>();
 	protected final Map<IndirectInput, Node> rel2ModuleInput = new HashMap<IndirectInput, Node>();
 	protected FFNeuralNetwork neuralNet;
 	
@@ -39,7 +40,7 @@ public abstract class ReusableModule<T> implements Serializable {
 	}
 	
 	/**
-	 * trains new or existing neural net representing the behavior of this module
+	 * trains new or existing neural net representing the behavior of this module (non dedup version)
 	 */
 	protected void trainModuleNN(ExperienceReplay<TransitionMemory> experienceReplay, T outputOfInterest,
 			RelationManager<T> relMngr, int[] numHidden, int epochs, double lRate, double mRate, double sRate) {
@@ -73,6 +74,39 @@ public abstract class ReusableModule<T> implements Serializable {
 		}
 	}
 	
+	/**
+	 * trains new or existing neural net representing the behavior of this module (dedup version)
+	 */
+	protected void trainModuleNN(Map<DiscreteState, Double> out1f, int[] numHidden,
+			int epochs, double lRate, double mRate, double sRate) {
+		for(int i = 0; i < epochs; i++) {
+//			double err = 0;
+			for (Map.Entry<DiscreteState, Double> entry : out1f.entrySet()) {
+				double[] input = entry.getKey().getRawState();
+				if (neuralNet == null) neuralNet = new FFNeuralNetwork(ActivationFunction.SIGMOID0p5,
+						input.length, 1, numHidden);
+				FFNeuralNetwork.feedForward(neuralNet.getInputNodes(), input);
+				FFNeuralNetwork.backPropagate(neuralNet.getOutputNodes(), lRate, mRate, sRate, entry.getValue());
+//				err += FFNeuralNetwork.getError(new double[] {entry.getValue()}, neuralNet.getOutputNodes());
+			}
+//			System.out.println(i + "	" + err / out1f.size());
+		}
+//		for (Map.Entry<DiscreteState, Double> entry : out1f.entrySet()) {
+//			FFNeuralNetwork.feedForward(neuralNet.getInputNodes(), entry.getKey().getRawState());
+//			System.out.println(entry.getValue() + "	vs	" + neuralNet.getOutputNodes().get(0).getActivation());
+//		}
+		if (rel2ModuleInput.isEmpty()) {
+			ArrayList<? extends Node> inputNodes = neuralNet.getInputNodes();
+			int j = 0;
+			for (IndirectInput rel : relations) rel2ModuleInput.put(rel, inputNodes.get(j++));
+		}
+	}
+
+	public void trainIfNecessary(Map<DiscreteState, Double> out1f, int[] numHidden, int epochs,
+			double lRate, double mRate, double sRate) {
+		if (neuralNet == null) trainModuleNN(out1f, numHidden, epochs, lRate, mRate, sRate);
+	}
+	
 	protected abstract int getVectorKey(T key);
 
 	/**
@@ -80,13 +114,21 @@ public abstract class ReusableModule<T> implements Serializable {
 	 */
 	public double evaluateOutput(T outputOfInterest, RelationManager<T> relMngr, double[] fullInput) {
 		if (neuralNet == null) throw new IllegalStateException("train before querying");
+		final double[] activations = getInputs(outputOfInterest, relMngr, fullInput);
+		return getNNOutput(activations);
+	}
+	
+	public double getNNOutput(double[] inputs) {
+		FFNeuralNetwork.feedForward(neuralNet.getInputNodes(), inputs);
+		return neuralNet.getOutputNodes().get(0).getActivation();
+	}
+	
+	public double[] getInputs(T outputOfInterest, RelationManager<T> relMngr, double[] fullInput) {
 		int[] inKeys = getInKeys(outputOfInterest, relMngr);
 		final double[] activations = new double[inKeys.length];
 		int i = 0;
-		for (int k : inKeys) activations[i++] = k >= 0 ? fullInput[k] : 0;
-		FFNeuralNetwork.feedForward(neuralNet.getInputNodes(), activations);
-		final double result = neuralNet.getOutputNodes().get(0).getActivation();
-		return result;
+		for (int k : inKeys) activations[i++] = k >= 0 && k < fullInput.length ? fullInput[k] : 0;
+		return activations;
 	}
 	
 	protected ArrayList<T> getRelInputs(T output, RelationManager<T> relMngr) {
@@ -98,6 +140,10 @@ public abstract class ReusableModule<T> implements Serializable {
 		return relNodes;
 	}
 	
+	public ArrayList<IndirectInput> getRelations() {
+		return relations;
+	}
+
 	@Override
 	public String toString() {
 		if (rel2ModuleInput.isEmpty()) return "uninitialized module";

@@ -12,7 +12,6 @@ public class Forecast extends HashMap<DiscreteState,Double> {
 		for (AtomicInteger ai : transitions.values()) sum += ai.get();
 		for (DiscreteState ds : transitions.keySet()) {
 			double p = transitions.get(ds).doubleValue() / sum;
-			// TODO p > hiThresh => fuse states, p < loThresh => remove post-state
 			if (p > cutoffProb) this.put(ds, p);
 		}
 	}

@@ -80,7 +80,7 @@ public class GridExploreGame extends GridGame {
 		private ArrayList<Double> pctCompleteOverTime = new ArrayList<Double>();
 		private ModelLearnerHeavy modeler;
 		public ModelLearnerHeavy test(int size, int turns, double pctExploreFirst, boolean repaint) {
-			BiasNode.clearConnections();
+//			BiasNode.clearConnections();
 			int numPlanSteps = size-1;
 			int numPlanRuns = 4;
 			int memorySize = turns;

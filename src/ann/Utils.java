@@ -10,6 +10,8 @@ import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import modeler.ModelLearner;
 import modeler.ModelLearnerHeavy;
@@ -119,6 +121,23 @@ public class Utils {
 	@SuppressWarnings("unchecked")
 	public static final <T> T[] createArray(Class<T> clasz, int len) {
 		return (T[])Array.newInstance(clasz, len);
+	}
+
+	@SuppressWarnings("unchecked")
+	public static final <T> T[] changeArrayLength(Class<? extends T> clasz, T[] orig, int newL) {
+		T[] result = (T[])Array.newInstance(clasz, newL);
+		System.arraycopy(orig, 0, result, 0, newL);
+		return result;
+	}
+	public static final double[] changeArrayLength(double[] orig, int newL) {
+		double[] result = new double[newL];
+		System.arraycopy(orig, 0, result, 0, newL);
+		return result;
+	}
+	public static final double[][] changeArrayLength(double[][] orig, int newL) {
+		double[][] result = new double[newL][];
+		System.arraycopy(orig, 0, result, 0, Math.min(newL, orig.length));
+		return result;
 	}
 	
 	public static double[] concat(double[]... vs) {
@@ -278,6 +297,16 @@ public class Utils {
 		for (int i = 0; i < state.length; i++) if (state[i] != otherState[i]) return false;
 		return true;
 	}
+	
+	public static <T,U> U putOrDefault(Map<T,U> map, T key, U defaultValue) {
+		U val = map.get(key);
+		if (val == null) {
+			map.put(key, defaultValue);
+			return defaultValue;
+		} else {
+			return val;
+		}
+	}
 
 	public static double max(double[][] m) {
 		double result = -666666;
@@ -285,5 +314,48 @@ public class Utils {
 			for (double d : v) result = Math.max(result, d);
 		}
 		return result;
+	}
+	
+	public static class Avger {
+		private double sum = 0;
+		private int count = 0;
+		public void observe(double val) {
+			sum += val;
+			count++;
+		}
+		public double getAvg() {
+			return sum / count;
+		}
+		public double getSum() {
+			return sum;
+		}
+		public int getCount() {
+			return count;
+		}
+		@Override
+		public String toString() {
+			return getAvg() + "	(N=" + count + ")";
+		}
+	}
+	
+	public static Avger combineAvgs(Collection<Avger> avgs) {
+		Avger result = new Avger();
+		for (Avger avg : avgs) {
+			result.sum += avg.sum;
+			result.count += avg.count;
+		}
+		return result;
+	}
+	
+	@SuppressWarnings("serial")
+	public static class OneToOneMap<Key, Value> extends HashMap<Key, Value> {
+		public Value put(Key k, Value v) {
+			valToKey_.put(v, k);
+			return super.put(k, v);
+		}
+		public Key getKeyByValue(Value v) {
+			return valToKey_.get(v);
+		}
+		private HashMap<Value, Key> valToKey_ = new HashMap<Value, Key>();
 	}
 }

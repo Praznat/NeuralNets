@@ -20,7 +20,7 @@ public class TransitionMemory implements Memory, Serializable {
 	public TransitionMemory(double[] preStateAndAction, int numStateVars, double[] postState) {
 		preStateVars = new double[numStateVars];
 		action = new double[preStateAndAction.length - numStateVars];
-		if (postState != null) postStateVars = postStateVars.clone();
+		if (postState != null) postStateVars = postState.clone();
 		System.arraycopy(preStateAndAction, 0, preStateVars, 0, numStateVars);
 		System.arraycopy(preStateAndAction, numStateVars, action, 0, action.length);
 	}

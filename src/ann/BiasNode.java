@@ -1,49 +1,56 @@
 package ann;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
-public class BiasNode {
+public class BiasNode extends Node {
 	
-	
-
-	public static final Node INSTANCE = ((ArrayList<Node>)Layer.createInputLayer(1, Node.BASIC_NODE_FACTORY).getNodes()).get(0);
-	private static final Map<Node, Connection> toNodesMap = new HashMap<Node, Connection>();
+	private static final long serialVersionUID = -8176764910268356606L;
+	//	public static final Node INSTANCE = ((ArrayList<Node>)Layer.createInputLayer(1, Node.BASIC_NODE_FACTORY).getNodes()).get(0);
 	private static final String BIASNAME = "BIAS";
-	
-	static {
-		INSTANCE.clamp(1);
-		INSTANCE.setName(BIASNAME);
+	private final Map<Node, Connection> toNodesMap = new HashMap<Node, Connection>();
+
+	private BiasNode() {
+		super(ActivationFunction.LINEAR, Layer.createInputLayer(1, Node.BASIC_NODE_FACTORY), BIASNAME);
+	}
+
+	public static BiasNode create() {
+		BiasNode result = new BiasNode();
+		result.clamp(1);
+		result.setName(BIASNAME);
+		return result;
 	}
 	
-	public static void connectToLayer(Layer<? extends Node> outputLayer) {
+	public void connectToLayer(Layer<? extends Node> outputLayer) {
 		for (Node n : outputLayer.getNodes()) connectToNode(n);
 	}
 
-	public static void connectToNode(Node node) {
+	public void connectToNode(Node node) {
 		connectToNode(node, null);
 	}
-	public static void connectToNode(Node node, AccruingWeight weight) {
-		Connection conn = weight == null ? Connection.getOrCreate(INSTANCE, node)
-				: Connection.getOrCreate(INSTANCE, node, weight);
+	public void connectToNode(Node node, AccruingWeight weight) {
+		Connection conn = weight == null ? Connection.getOrCreate(this, node)
+				: Connection.getOrCreate(this, node, weight);
 		toNodesMap.put(node, conn);
 		if (toNodesMap.size() > 10000) {
 			System.out.println("MEMORY LEAK WARNING! Clear biases please!");
 		}
 	}
 	
-	public static void clearConnections() {
-		INSTANCE.getOutputConnections().clear();
-		toNodesMap.clear();
-	}
+//	public static void clearConnections() {
+//		INSTANCE.getOutputConnections().clear();
+//		toNodesMap.clear();
+//	}
 	
-	public static void disconnectFrom(Node n) {
-		for (Iterator<Connection> iter = INSTANCE.getOutputConnections().iterator(); iter.hasNext();) {
+	public void disconnectFrom(Node n) {
+		for (Iterator<Connection> iter = this.getOutputConnections().iterator(); iter.hasNext();) {
 			Connection conn = iter.next();
 			if (conn.getOutputNode() == n) iter.remove();
 		}
 	}
 	
-	public static Connection getBiasConnection(Node n) {
+	public Connection getBiasConnection(Node n) {
 		return toNodesMap.get(n);
 	}
 

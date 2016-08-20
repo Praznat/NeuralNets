@@ -2,6 +2,8 @@ package ann.testing.display;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -23,12 +25,13 @@ public class GridGameControlPanel extends JPanel implements ActionListener {
 	JButton b2 = new JButton("Evade");
 	private long lastClickMs;
 	private double[] savedState;
+	private Map<String, double[]> actMap = new HashMap<String, double[]>();
 	public GridGameControlPanel(JFrame parent) {
 		this.parent = parent;
-		this.add(bL);
-		this.add(bR);
-		this.add(bU);
-		this.add(bD);
+//		this.add(bL);
+//		this.add(bR);
+//		this.add(bU);
+//		this.add(bD);
 		this.add(bRestore);
 		this.add(b1);
 		this.add(b2);
@@ -44,6 +47,18 @@ public class GridGameControlPanel extends JPanel implements ActionListener {
 		this.game = game;
 		parent.pack();
 	}
+	public void setGame(GridGame game, String... actNames) {
+		this.setGame(game);
+		for (int i = 0; i < actNames.length; i++) {
+			String name = "Predict-" + actNames[i];
+			actMap.put(name, game.actionChoices.get(i));
+			JButton b = new JButton(name);
+			this.add(b);
+			b.addActionListener(this);
+		}
+		this.repaint();
+		this.revalidate();
+	}
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		final String command = e.getActionCommand();
@@ -58,7 +73,9 @@ public class GridGameControlPanel extends JPanel implements ActionListener {
 				double[] state = game.getState();
 				if (savedState == null) savedState = state;
 				double[] action = null;
-				if (command.equals("Predict-L")) {
+				double[] act = actMap.get(command);
+				if (act != null) action = act;
+				else if (command.equals("Predict-L")) {
 					action = GridExploreGame.LEFT;
 				} else if (command.equals("Predict-R")) {
 					action = GridExploreGame.RIGHT;
@@ -73,8 +90,6 @@ public class GridGameControlPanel extends JPanel implements ActionListener {
 				game.convertFromState(newStateVars);
 			}
 			parent.repaint();
-//			game.convertFromState(state);
-//			repaint();
 		}
 		else if (command.equals("Catch")) {
 			game.setRewardFunction(GridTagGame.follow(game));

@@ -11,8 +11,8 @@ public class Node implements Serializable {
 	protected String nodeInLayer;
 	protected Double preactivation;
 	protected double activation;
-	protected Collection<Connection> inputConnections;
-	protected Collection<Connection> outputConnections;
+	protected ArrayList<Connection> inputConnections;
+	protected ArrayList<Connection> outputConnections;
 	
 	public Node(ActivationFunction activationFunction, Layer<? extends Node> parentLayer, String nodeInLayer) {
 		this.activationFunction = activationFunction;
@@ -47,20 +47,11 @@ public class Node implements Serializable {
 		this.activation = value;
 	}
 
-	public Collection<Connection> getInputConnections() {
+	public ArrayList<Connection> getInputConnections() {
 		return inputConnections;
 	}
 
-	public Collection<Connection> getOutputConnections() {
-		return outputConnections;
-	}
-	
-	/** same as non-raw unless sparse node */
-	public Collection<Connection> getRawInputConnections() {
-		return inputConnections;
-	}
-	/** same as non-raw unless sparse node */
-	public Collection<Connection> getRawOutputConnections() {
+	public ArrayList<Connection> getOutputConnections() {
 		return outputConnections;
 	}
 	

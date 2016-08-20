@@ -24,15 +24,30 @@ public class ModelLearnerModularPure extends ModelLearnerHeavy {
 		return moduleManager.getOutputs(this, relMngr, stateVars, action);
 	}
 	
+	public void learn() {
+		moduleManager.processFullModel(this, relMngr, processTransitions, processTimes);
+	}
+	
+	public void learnGradually(int modules0, int modulesT, double scoreThresh0, double scoreThreshT, int steps) {
+		processTimes = 1; // errrr..
+		for (int i = 0; i <= steps; i++) {
+			int m = modules0 + (int)Math.round(i * ((double)modulesT - modules0) / steps);
+			double s = scoreThresh0 + (i * (scoreThreshT - scoreThresh0) / steps);
+			moduleManager.setMaxModules(m);
+			moduleManager.setMinScore(s);
+			learn();
+		}
+	}
+	
 	@Override
 	public void learnOnline(double lRate, double mRate, double sRate) {
-		moduleManager.processFullModel(this, relMngr, processTransitions, processTimes);
+		throw new IllegalStateException("User learn()");
 	}
 	
 	@Override
 	public void learnFromMemory(double lRate, double mRate, double sRate,
 			boolean resample, int iterations, long displayProgressMs, double stopAtErrThreshold) {
-		learnOnline(lRate, mRate, sRate);
+		throw new IllegalStateException("User learn()");
 	}
 
 	public ModuleManagerPure getModuleManager() {

@@ -7,7 +7,7 @@ import java.util.Map;
 
 import ann.FFNeuralNetwork;
 import ann.Utils;
-import ann.testing.GridGame;
+import ann.testing.IGridGame;
 import modeler.ModelLearnerModularPure;
 import modularization.WeightPruner;
 
@@ -20,10 +20,16 @@ public class ModuleDisplayer extends ModelDisplayer<ModelLearnerModularPure> {
 	private Map<Integer, ModuleDistribution<Integer>> nodeModules;
 	private Map<ReusableIntModule, Color> modulesColored = new HashMap<ReusableIntModule, Color>();
 
-	public ModuleDisplayer(ModelLearnerModularPure modeler, int actGrid, GridGame game) {
-		super(modeler, actGrid, game);
-		setup();
+	public static ModuleDisplayer create(ModelLearnerModularPure modeler,
+			final int numStateVars, final IGridGame game) {
+		int area = game.getRows() * game.getCols();
+		int numObjs = numStateVars / area;
+		int[][] grids = new int[numObjs + 1][];
+		for(int i = 0; i < grids.length-1; i++) grids[i] = new int[] {game.getRows(), game.getCols()};
+		grids[numObjs] = new int[] {numStateVars % area, 1};
+		return new ModuleDisplayer(modeler, numObjs + 1, grids);
 	}
+	
 	public ModuleDisplayer(ModelLearnerModularPure modeler, int actGrid, int[][] grids) {
 		super(modeler, actGrid, grids);
 		setup();
@@ -37,34 +43,36 @@ public class ModuleDisplayer extends ModelDisplayer<ModelLearnerModularPure> {
 	@Override
 	protected void paintPredVar(int r, int c, Graphics g, int v) {
 		super.paintPredVar(r, c, g, v);
-		System.out.println(v);
 		ModuleDistribution<Integer> dist = nodeModules.get(v);
-		ReusableIntModule module = (ReusableIntModule) (dist != null ? dist.getMostLikelyModule() : null);
+		ReusableIntModule module = getModuleFromDist(dist);
 		g.setColor(getColor(module));
 		g.fillRect(c*gUnit+1, r*gUnit+1, gUnit-2, gUnit-2);
+	}
+	
+	private static ReusableIntModule getModuleFromDist(ModuleDistribution<Integer> dist) {
+		return (ReusableIntModule) (dist != null ? dist.getMostLikelyModule() : null);
+//		return (ReusableIntModule) (dist != null ? dist.drawModuleProbabilistically() : null);
 	}
 	
 	private Color getColor(ReusableIntModule module) {
 		if (module == null) return Color.WHITE;
 		Color c = modulesColored.get(module);
-		System.out.println(module);
-		System.out.println(c);
 		if (c == null) { // module not seen yet
 			int i = modulesColored.size();
-			System.out.println(i);
 			if (i >= COLORS.length) c = new Color((int) (256 * Math.random()),
 					(int) (256 * Math.random()), (int) (256 * Math.random()));
 			else c = COLORS[i];
-			System.out.println(c);
 			modulesColored.put(module, c);
 		}
-		System.out.println();
 		return c;
 	}
 	
 	@Override
-	protected void showSingleVarDependencies(final int varKey) {
+	protected void reportOnOutputVar(final int varKey) {
 		// TODO draw module neural net? print wgt matrices?
+		System.out.println(varKey + "th output");
+		ModuleDistribution<Integer> dist = nodeModules.get(varKey);
+		dist.report(10);
 	}
 
 	@Override

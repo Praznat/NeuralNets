@@ -10,6 +10,16 @@ public class ReusableIntModule extends ReusableModule<Integer> {
 	 * creates a reusable module
 	 * @param relMngr 
 	 */
+	public static ReusableIntModule createNeighborHoodModule(RelationManager<Integer> relMngr) {
+		ReusableIntModule result = new ReusableIntModule();
+		result.relations.addAll(relMngr.getUsedRels());
+		return result;
+	}
+	
+	/**
+	 * creates a reusable module and trains it
+	 * @param relMngr 
+	 */
 	public static ReusableIntModule createNeighborHoodModule(ModelLearner modeler,
 			RelationManager<Integer> relMngr, int outputOfInterest, int[] numHidden,
 			int epochs, double lRate, double mRate, double sRate) {

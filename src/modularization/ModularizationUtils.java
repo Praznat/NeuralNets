@@ -35,13 +35,13 @@ public class ModularizationUtils {
 		for (Node n : inputs) n.getOutputConnections().clear();
 		for (Node n : outputs) {
 			n.getInputConnections().clear();
-			BiasNode.disconnectFrom(n);
+			ann.getBiasNode().disconnectFrom(n);
 		}
 		LinkedList<Layer<? extends Node>> layers = ann.getLayers();
 		int numLayers = ann.getNumLayers();
 		for (int i = numLayers - 2; i >= 1; i--) {
 			Layer<? extends Node> removed = layers.remove(i);
-			for (Node n : removed.getNodes()) BiasNode.disconnectFrom(n);
+			for (Node n : removed.getNodes()) ann.getBiasNode().disconnectFrom(n);
 		}
 		ActivationFunction actFn = inputs.get(0).getActivationFunction();
 		for (int i = 0; i < hiddenPerOutput.length; i++) {
@@ -50,7 +50,7 @@ public class ModularizationUtils {
 		for (Node output : outputs) {
 			Collection<Node> outputColl = new ArrayList<Node>();
 			outputColl.add(output);
-			BiasNode.connectToNode(output);
+			ann.getBiasNode().connectToNode(output);
 			Collection<Node> lastNodes = new ArrayList<Node>();
 			for (Node input : inputs) {
 				IndirectInput rel = relMngr.getRel(input, output);
@@ -64,7 +64,7 @@ public class ModularizationUtils {
 					Node n = ann.nodeFactory.create(actFn, layer, String.valueOf(i));
 					layer.addNode(n);
 					newNodes.add(n);
-					BiasNode.connectToNode(n);
+					ann.getBiasNode().connectToNode(n);
 				}
 				Layer.fullyConnect(lastNodes, newNodes);
 				lastNodes.clear();
@@ -93,7 +93,8 @@ public class ModularizationUtils {
 			if (fromFode == null) { // out of bounds input... put in layer but don't connect to outputs
 				addNewNodeToLayer(resultLayers, 0, result.nodeFactory, ActivationFunction.LINEAR);
 			} else {
-				findConnToNodesLeadingTo(fromFode, includedOutput, result.nodeFactory, resultLayers, seenFodeToNode);
+				findConnToNodesLeadingTo(fromFode, includedOutput, result.nodeFactory, resultLayers, seenFodeToNode,
+						original.getBiasNode(), result.getBiasNode());
 			}
 		}
 //		debug(original, result);
@@ -101,16 +102,17 @@ public class ModularizationUtils {
 	}
 	
 	private static void findConnToNodesLeadingTo(Node fromFode, Node toFode, Node.Factory<? extends Node> nodeFactory,
-			LinkedList<Layer<? extends Node>> layers, Map<Node, Node> seenFodeToNode) {
+			LinkedList<Layer<? extends Node>> layers, Map<Node, Node> seenFodeToNode, BiasNode oldBias, BiasNode newBias) {
 		ArrayList<DoThingContainer> sofar = new ArrayList<DoThingContainer>();
-		findConnToNodesLeadingTo(null, null, fromFode, toFode, 0, layers, nodeFactory, seenFodeToNode, sofar);
+		findConnToNodesLeadingTo(null, null, fromFode, toFode, 0, layers, nodeFactory, seenFodeToNode, sofar, oldBias, newBias);
 	}
 	
 	private static void findConnToNodesLeadingTo(Connection conn2FromFode, DoThingContainer prevDTC, Node fromFode, Node toFode,
 			int depth, LinkedList<Layer<? extends Node>> layers, Node.Factory<? extends Node> nodeFactory,
-			Map<Node, Node> seenFodeToNode, ArrayList<DoThingContainer> sofar) {
+			Map<Node, Node> seenFodeToNode, ArrayList<DoThingContainer> sofar, BiasNode oldBias, BiasNode newBias) {
 		ActivationFunction actFn = fromFode.getActivationFunction();
-		DoThingContainer dtc = new DoThingContainer(conn2FromFode, prevDTC, fromFode, seenFodeToNode, layers, depth, nodeFactory, actFn);
+		DoThingContainer dtc = new DoThingContainer(conn2FromFode, prevDTC, fromFode, seenFodeToNode, layers, depth, nodeFactory,
+				actFn, oldBias, newBias);
 		sofar.add(dtc);
 		if (fromFode.getOutputConnections().isEmpty()) {
 			if (fromFode == toFode) {
@@ -124,7 +126,7 @@ public class ModularizationUtils {
 		
 		for (Connection conn : fromFode.getOutputConnections()) {
 			findConnToNodesLeadingTo(conn, dtc, conn.getOutputNode(), toFode, depth+1, layers, nodeFactory,
-					seenFodeToNode, sofar);
+					seenFodeToNode, sofar, oldBias, newBias);
 		}
 	}
 	
@@ -177,11 +179,14 @@ public class ModularizationUtils {
 		private final int depth;
 		private final Node.Factory<? extends Node> nodeFactory;
 		private final ActivationFunction activationFunction;
+		private final BiasNode oldBiasNode;
+		private final BiasNode newBiasNode;
 		private Node newNode;
 
 		public DoThingContainer(Connection conn2FromFode, DoThingContainer prevDTC, Node fromFode,
 				Map<Node, Node> seenFodeToNode, LinkedList<Layer<? extends Node>> layers,
-				int depth, Factory<? extends Node> nodeFactory, ActivationFunction activationFunction) {
+				int depth, Factory<? extends Node> nodeFactory, ActivationFunction activationFunction,
+				BiasNode oldBiasNode, BiasNode newBiasNode) {
 			this.conn2FromFode = conn2FromFode;
 			this.prevDTC = prevDTC;
 			this.fromFode = fromFode;
@@ -190,6 +195,8 @@ public class ModularizationUtils {
 			this.depth = depth;
 			this.nodeFactory = nodeFactory;
 			this.activationFunction = activationFunction;
+			this.oldBiasNode = oldBiasNode;
+			this.newBiasNode = newBiasNode;
 		}
 		
 		void doit() {
@@ -197,8 +204,8 @@ public class ModularizationUtils {
 			if (newNode == null) {
 				newNode = addNewNodeToLayer(layers, depth, nodeFactory, activationFunction);
 				if (depth > 0) {
-					final double biasW = BiasNode.getBiasConnection(fromFode).getWeight().getWeight();
-					BiasNode.connectToNode(newNode, new AccruingWeight(biasW));
+					final double biasW = oldBiasNode.getBiasConnection(fromFode).getWeight().getWeight();
+					newBiasNode.connectToNode(newNode, new AccruingWeight(biasW));
 				}
 				seenFodeToNode.put(fromFode, newNode);
 			}

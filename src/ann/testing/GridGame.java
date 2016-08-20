@@ -78,13 +78,6 @@ public abstract class GridGame implements IGridGame {
 	
 	public void setupForTurn() {}
 
-	public RewardFunction getRewFun() {
-		return rewardFn;
-	}
-
-	RewardFunction getRewardFunction() {
-		return rewardFn;
-	}
 	public void setRewardFunction(RewardFunction rewardFunction) {
 		 this.rewardFn = rewardFunction;
 	}
@@ -98,8 +91,8 @@ public abstract class GridGame implements IGridGame {
 		display.gridPanel.setGame(this);
 	}
 
-	public void setupControlPanel() {
-		display.controlPanel.setGame(this);
+	public void setupControlPanel(String... actNames) {
+		display.controlPanel.setGame(this, actNames);
 	}
 	
 	public int getGUnit() {

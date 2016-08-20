@@ -17,6 +17,7 @@ import transfer.ReuseNetwork;
 import utils.RandomUtils;
 
 
+@SuppressWarnings("unused")
 public class FlierCatcher extends GridExploreGame {
 
 	public enum MoveRule {NORMAL, CELLAUTONAMA};

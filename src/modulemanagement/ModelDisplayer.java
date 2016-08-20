@@ -15,9 +15,9 @@ import javax.swing.JPanel;
 
 import ann.FFNeuralNetwork;
 import ann.Utils;
-import ann.testing.GridGame;
 import modeler.ModelLearner;
 import modeler.ModelLearnerModularImpure;
+import modeler.ModelLearnerModularPure;
 import modularization.WeightPruner;
 
 public class ModelDisplayer<T extends ModelLearner> implements MouseListener {
@@ -28,17 +28,13 @@ public class ModelDisplayer<T extends ModelLearner> implements MouseListener {
 	protected T modeler;
 	protected int[][] grids;
 	protected int numVars;
-	protected int gUnit = 35;
+	protected int gUnit;
 	private Map<Point, Integer> centerToVar = new HashMap<Point, Integer>();
 
-	public ModelDisplayer(T modeler, final int actGridKey, final GridGame game) {
-		// TODO reduce hackiness... (grid for player, grid for opponent class, what about if it's not these two?)
-		this(modeler, actGridKey, new int[] {game.rows, game.cols}, new int[] {game.rows, game.cols},
-				new int[] {game.actionChoices.size(), 1});
-	}
 	public ModelDisplayer(T modeler, final int actGridKey, final int[]... grids) {
 		this.grids = grids;
 		this.numVars = countVars();
+		gUnit = (int) Math.round(400 / Math.sqrt(numVars));
 		this.modeler = modeler;
 		if (this.modeler instanceof ModelLearnerModularImpure) {
 			System.out.println("WARNING: Consider useing ModuleDisplayer for ModelLearnerModular");
@@ -69,7 +65,7 @@ public class ModelDisplayer<T extends ModelLearner> implements MouseListener {
 		centerToVar.put(p, v);
 	}
 	
-	protected void showSingleVarDependencies(final int varKey) {
+	protected void reportOnOutputVar(final int varKey) {
 		outPanel.setModulePainter(createModulePainter(varKey));
 		outPanel.repaint();
 	}
@@ -95,13 +91,14 @@ public class ModelDisplayer<T extends ModelLearner> implements MouseListener {
 	}
 	
 	private void createJFrame() {
+		boolean hasSensitivityGraph = !modeler.getClass().isAssignableFrom(ModelLearnerModularPure.class);
 		frame = new JFrame();
 		inPanel = new ModulePanel();
 		outPanel = new ModulePanel();
-		frame.setLayout(new GridLayout(0,2));
+		frame.setLayout(new GridLayout(0,hasSensitivityGraph ? 2 : 1));
 		frame.add(inPanel);
 		inPanel.addMouseListener(this);
-		frame.add(outPanel);
+		if (hasSensitivityGraph) frame.add(outPanel);
 		frame.setVisible(true);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.pack();
@@ -129,7 +126,7 @@ public class ModelDisplayer<T extends ModelLearner> implements MouseListener {
 			}
 		}
 		int varKey = centerToVar.get(closestP);
-		showSingleVarDependencies(varKey);
+		reportOnOutputVar(varKey);
 	}
 	@Override
 	public void mouseEntered(MouseEvent arg0) {}
@@ -152,7 +149,8 @@ public class ModelDisplayer<T extends ModelLearner> implements MouseListener {
 		}
 		@Override
 		public Dimension getPreferredSize() {
-			return new Dimension(gUnit * 20, gUnit * 10);
+			int d = (int)Math.round(Math.sqrt(numVars));
+			return new Dimension(d * gUnit * 6, d * gUnit);
 		}
 	}
 	class ModulePainter {

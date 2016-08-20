@@ -11,7 +11,8 @@ public class FFNeuralNetwork implements NeuralNetwork, Serializable {
 	
 	protected final LinkedList<Layer<? extends Node>> layers = new LinkedList<Layer<? extends Node>>();
 	public final Node.Factory<? extends Node> nodeFactory;
-	
+	private final BiasNode biasNode = BiasNode.create();
+
 	public FFNeuralNetwork() {
 		this.nodeFactory = Node.BASIC_NODE_FACTORY;
 	}
@@ -24,13 +25,13 @@ public class FFNeuralNetwork implements NeuralNetwork, Serializable {
 		Layer<? extends Node> lastLayer = inputLayer;
 		for (int h : numHidden) {
 			Layer<? extends Node> hiddenLayer = Layer.createHiddenFromInputLayer(lastLayer, h, actFn, nodeFactory);
-			BiasNode.connectToLayer(hiddenLayer);
+			getBiasNode().connectToLayer(hiddenLayer);
 			lastLayer = hiddenLayer;
 			layers.add(lastLayer);
 		}
 		Layer<? extends Node> outputLayer = Layer.createHiddenFromInputLayer(lastLayer, numOutputs, actFn, nodeFactory);
 		layers.add(outputLayer);
-		BiasNode.connectToLayer(outputLayer);
+		getBiasNode().connectToLayer(outputLayer);
 	}
 	public FFNeuralNetwork(ActivationFunction actFn, int numInputs, int numOutputs, int... numHidden) {
 		this(actFn, numInputs, numOutputs, Node.BASIC_NODE_FACTORY, numHidden);
@@ -46,6 +47,14 @@ public class FFNeuralNetwork implements NeuralNetwork, Serializable {
 	@Override
 	public ArrayList<? extends Node> getOutputNodes() {
 		return layers.get(layers.size()-1).getNodes();
+	}
+	
+	public double[] getOutputActivations() {
+		ArrayList<? extends Node> outputNodes = this.getOutputNodes();
+		int i = 0;
+		double[] result = new double[outputNodes.size()];
+		for (Node o : outputNodes) result[i++] = o.getActivation();
+		return result;
 	}
 	
 	public LinkedList<Layer<? extends Node>> getLayers() {
@@ -72,9 +81,13 @@ public class FFNeuralNetwork implements NeuralNetwork, Serializable {
 			for (Node prev : prevLayer.getNodes()) Connection.getOrCreate(prev, node);
 		}
 		// bias null check cuz dont wanna connect input to bias
-		if (biasWeight != null) BiasNode.connectToNode(node, biasWeight);
+		if (biasWeight != null) getBiasNode() .connectToNode(node, biasWeight);
 	}
 
+	public BiasNode getBiasNode() {
+		return biasNode;
+	}
+	
 	public static double stdError(Collection<? extends Node> inputNodes,
 			Collection<? extends Node> outputNodes, Collection<DataPoint> data) {
 		double sumErr = 0;
@@ -130,7 +143,7 @@ public class FFNeuralNetwork implements NeuralNetwork, Serializable {
 			if (targets != null && i >= targets.length) break;
 			final double activation = n.getActivation();
 			final double derivative = n.getActivationFunction().derivative(activation);
-			double delta = derivative;
+			double delta = 1;// derivative; TODO cross entropy (1), sqr error (derivative)
 			if (targets != null) delta *= (targets[i++] - activation);
 			else{
 				double sumBlame = 0;
@@ -178,6 +191,36 @@ public class FFNeuralNetwork implements NeuralNetwork, Serializable {
 			sb.append("\n");
 		}
 		System.out.println(sb.toString());
+	}
+
+	public FFNeuralNetwork getCopy() {
+		FFNeuralNetwork result = new FFNeuralNetwork();
+		Layer<? extends Node> lastNewLayer = null;
+		for (Layer<? extends Node> oldLayer : this.layers) {
+			int n = oldLayer.getNodes().size();
+			if (lastNewLayer == null) {
+				lastNewLayer = Layer.createInputLayer(n, nodeFactory);
+			} else {
+				Layer<? extends Node> newLayer = Layer.createHiddenFromInputLayer(lastNewLayer, n,
+						oldLayer.getNodes().get(0).getActivationFunction(), nodeFactory);
+				result.getBiasNode().connectToLayer(newLayer);
+				if (newLayer.getNodes().size() != oldLayer.getNodes().size())
+					throw new IllegalStateException("Unequal layer size bug in clone");
+				for (int i = 0; i < newLayer.getNodes().size(); i++) {
+					ArrayList<Connection> newConns = newLayer.getNodes().get(i).getInputConnections();
+					ArrayList<Connection> oldConns = oldLayer.getNodes().get(i).getInputConnections();
+					if (newConns.size() != oldConns.size()) throw new IllegalStateException("Unequal layer size bug in clone");
+					for (int j = 0; j < newConns.size(); j++) {
+						AccruingWeight newWgt = newConns.get(j).getWeight();
+						newWgt.setWeight(oldConns.get(j).getWeight().getWeight());
+						newWgt.enactWeightChange(0);
+					}
+				}
+				lastNewLayer = newLayer;
+			}
+			result.layers.add(lastNewLayer);
+		}
+		return result;
 	}
 	
 }

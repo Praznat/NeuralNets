@@ -95,8 +95,11 @@ public abstract class ModelLearner {
 	public ArrayList<Double> getTrainingLog() {
 		return trainingErrorLog;
 	}
-	
+
 	public double getPctMastered() {
+		return getPctMastered(-1, Integer.MAX_VALUE);
+	}
+	public double getPctMastered(int minVar, int maxVar) {
 		double sum = 0;
 		ModelNeuralNet vta = getTransitionsModule();
 		allmemo:
@@ -105,11 +108,18 @@ public abstract class ModelLearner {
 			observePreState(tm.preStateVars);
 			feedForward();
 			int i = 0;
+			if (tm.postStateVars.length < maxVar) maxVar = tm.postStateVars.length;
 			for (Node n : vta.getNeuralNetwork().getOutputNodes()) {
-				if (i >= tm.postStateVars.length) break;
-				if (Math.round(n.getActivation()) != Math.round(tm.postStateVars[i++])) continue allmemo;
+				if (i >= minVar) {
+					if (i >= maxVar) break;
+					if (Math.round(n.getActivation()) != Math.round(tm.postStateVars[i])) {
+						continue allmemo; // if wrong activation, dont increment sum
+					}
+				}
+				i++;
 			}
 			sum++;
+//			System.out.println(new DiscreteState(tm.postStateVars));
 		}
 		return sum / experienceReplay.getSize();
 	}

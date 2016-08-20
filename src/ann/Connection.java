@@ -17,8 +17,8 @@ public class Connection implements Serializable {
 
 	public static <N extends Node> Connection quickCreate(N inputNode, N outputNode, AccruingWeight weight) {
 		Connection conn = new Connection((Node) inputNode, (Node) outputNode, weight);
-		inputNode.getRawOutputConnections().add(conn);
-		outputNode.getRawInputConnections().add(conn);
+		inputNode.getOutputConnections().add(conn);
+		outputNode.getInputConnections().add(conn);
 		return conn;
 	}
 	public static <N extends Node> Connection getOrCreate(N inputNode, N outputNode) {
@@ -26,7 +26,7 @@ public class Connection implements Serializable {
 	}
 	public static <N extends Node> Connection getOrCreate(N inputNode, N outputNode, AccruingWeight weight) {
 		Connection conn = null;
-		for (Connection outputConn : inputNode.getRawOutputConnections()) {
+		for (Connection outputConn : inputNode.getOutputConnections()) {
 			if (outputConn.getOutputNode() == outputNode) {
 				conn = outputConn;
 				break;
@@ -34,7 +34,7 @@ public class Connection implements Serializable {
 		}
 		if (conn != null) { // just check input-output = output-input
 			boolean isOK = false;
-			for (Connection inputConn : outputNode.getRawInputConnections()) {
+			for (Connection inputConn : outputNode.getInputConnections()) {
 				if (inputConn.getInputNode() == inputNode && inputConn == conn) isOK = true;
 			}
 			if (!isOK) System.out.println("CRITICAL ERROR: input-output != output-input");

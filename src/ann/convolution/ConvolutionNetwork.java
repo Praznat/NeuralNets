@@ -15,7 +15,7 @@ public class ConvolutionNetwork implements NeuralNetwork {
 	private final ArrayList<ArrayList<ConvolutionLayer>> hiddenLayers = new ArrayList<ArrayList<ConvolutionLayer>>();
 
 	public ConvolutionNetwork(int inR, int inC, ConvSpec... convspecs) {
-		BiasNode.clearConnections();
+//		BiasNode.clearConnections();
 		inputLayer = ConvolutionLayer.createNewInputLayer(inR, inC);
 		Collection<ConvolutionLayer> lastLayers = new ArrayList<ConvolutionLayer>();
 		lastLayers.add(getInputLayer());

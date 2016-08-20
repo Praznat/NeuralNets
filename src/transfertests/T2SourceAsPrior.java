@@ -71,7 +71,7 @@ public class T2SourceAsPrior {
 		modularizeAndDisplay(priorModel, gridSpec);
 		modularizeAndDisplay(scratchFlierModel, gridSpec);
 		
-		BiasNode.clearConnections();
+//		BiasNode.clearConnections();
 		
 		return fcPrioredFliers.getWinRate() - fcScratchFliers.getWinRate();
 	}

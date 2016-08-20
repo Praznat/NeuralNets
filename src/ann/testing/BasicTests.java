@@ -27,10 +27,11 @@ public class BasicTests {
 		Layer<Node> inputLayer = Layer.createInputLayer(2, Node.BASIC_NODE_FACTORY);
 		Layer<Node> hiddenLayer = Layer.createHiddenFromInputLayer(inputLayer, 4,
 				ActivationFunction.SUPERSIGMOID, Node.BASIC_NODE_FACTORY);
-		BiasNode.connectToLayer(hiddenLayer);
+		BiasNode biasNode = BiasNode.create();
+		biasNode.connectToLayer(hiddenLayer);
 		Layer<Node> outputLayer = Layer.createHiddenFromInputLayer(hiddenLayer, 1,
 				ActivationFunction.SUPERSIGMOID, Node.BASIC_NODE_FACTORY);
-		BiasNode.connectToLayer(outputLayer);
+		biasNode.connectToLayer(outputLayer);
 		double[][] inputSamples = {{0,0},{0,1},{1,0},{1,1}};
 		System.out.println("Untrained");
 		for (double[] is : inputSamples) {
@@ -194,7 +195,7 @@ public class BasicTests {
 		if (p1 == bests[1]) wins[1]++;
 		if (p2 == bests[2]) wins[2]++;
 		if (p3 == bests[3]) wins[3]++;
-		BiasNode.clearConnections();
+//		BiasNode.clearConnections();
 		return wins;
 	}
 	

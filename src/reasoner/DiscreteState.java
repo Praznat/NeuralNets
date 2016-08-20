@@ -1,8 +1,10 @@
 package reasoner;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
-public class DiscreteState {
+@SuppressWarnings("serial")
+public class DiscreteState implements Serializable {
 	final double[] rawState;
 	final boolean[] factoredState;
 	
@@ -17,10 +19,17 @@ public class DiscreteState {
 	@Override
 	public boolean equals(Object other) {
 		DiscreteState o = (DiscreteState) other;
-		if (this.factoredState.length != o.factoredState.length) return false;
-		for (int i = 0; i < factoredState.length; i++)
-			if (this.factoredState[i] != o.factoredState[i]) return false;
-		return true;
+		boolean result = true;
+		if (this.factoredState.length != o.factoredState.length) result = false;
+		else for (int i = 0; i < factoredState.length; i++)
+			if (this.factoredState[i] != o.factoredState[i]) {
+				result = false;
+				break;
+			}
+//		if (other.toString().equals(this.toString()) && !result) {
+//			System.out.println("THIS IS CUZ OF LENGTH DIFFERENCE");
+//		}
+		return result;
 	}
 	@Override
 	public int hashCode() {

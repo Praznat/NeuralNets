@@ -1,8 +1,10 @@
 package ann;
 
+import java.io.Serializable;
 import java.util.*;
 
-public class ExperienceReplay<T extends ExperienceReplay.Memory> {
+@SuppressWarnings("serial")
+public class ExperienceReplay<T extends ExperienceReplay.Memory> implements Serializable {
 
 	private final ArrayList<T> dataMemory = new ArrayList<T>();
 	private final int maxSize;
@@ -60,5 +62,8 @@ public class ExperienceReplay<T extends ExperienceReplay.Memory> {
 	}
 	public double getSize() {
 		return dataMemory.size();
+	}
+	public ArrayList<T> getInOrder() {
+		return dataMemory;
 	}
 }

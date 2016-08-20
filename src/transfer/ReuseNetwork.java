@@ -31,7 +31,7 @@ public class ReuseNetwork extends FFNeuralNetwork {
 		Layer<? extends Node> outputLayer = Layer.createHiddenFromInputLayer(sourceOutputs,
 				sourceOutputs.size(), actFn, result.nodeFactory);
 		result.getLayers().add(outputLayer);
-		BiasNode.connectToLayer(outputLayer);
+		result.getBiasNode().connectToLayer(outputLayer);
 		return result;
 	}
 	

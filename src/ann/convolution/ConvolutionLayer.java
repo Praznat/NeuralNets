@@ -13,6 +13,7 @@ import ann.*;
  */
 public class ConvolutionLayer extends Layer<ConvolutionNode> {
 
+	private final BiasNode biasNode = BiasNode.create();
 	private ConvolutionNode[][] nodeMap;
 	private Dimension dimensions;
 	private Set<AccruingWeight> knownWeights = new HashSet<AccruingWeight>();
@@ -85,7 +86,7 @@ public class ConvolutionLayer extends Layer<ConvolutionNode> {
 		}
 		result.cropNodes(r, c);
 
-		BiasNode.connectToLayer(result);
+		result.biasNode.connectToLayer(result);
 		result.dimensions = new Dimension(c, r);
 		return result;
 	}

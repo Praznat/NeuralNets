@@ -82,11 +82,11 @@ public class ModuleManagerImpure extends ModuleManager<Node> {
 			}
 		}
 		int n = transitions.size();
-		outputScores.clear();
-		for (int i = 0; i < scores.length; i++) {
-			addOutputScore(outputNodes.get(i), scores[i] / n, i);
-		}
-		respond(outputScores, modeler, relMngr, transitions);
+//		outputScores.clear();
+//		for (int i = 0; i < scores.length; i++) {
+//			addOutputScore(outputNodes.get(i), scores[i] / n, i);
+//		}
+//		respond(outputScores, modeler, relMngr, transitions);
 	}
 
 	private void respond(TreeSet<OutputScore<Node>> outputScores, ModelLearner modeler,

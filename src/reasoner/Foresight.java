@@ -189,8 +189,11 @@ public class Foresight {
 		for (int i = 0; i < in.length; i++) out[i] = probabilitySkewing(in[i], factor);
 		return out;
 	}
+	/** underestimates small probabilities and overestimates large probabilities.
+	 * factor represents highest probability that goes to zero */
 	public static double probabilitySkewing(double in, double factor) { // e.g. factor= .05, 0.1
-		return Math.min(1, Math.max(0, in * (1 + factor) - factor / 2));
+		final double f = -1 / (2 * factor - 1) - 1;
+		return Math.min(1, Math.max(0, in * (1 + f) - f / 2));
 	}
 	
 }
